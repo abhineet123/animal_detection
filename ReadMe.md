@@ -1,4 +1,4 @@
-This repository provides python and matlab code for all experiments reported in this paper:
+This repository provides python code for all experiments reported in this paper:
 
 Animal Detection in Man-made Environments
 [[arxiv](https://arxiv.org/abs/1901.04412).
