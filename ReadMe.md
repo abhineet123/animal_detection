@@ -6,9 +6,8 @@ Animal Detection in Man-made Environments
 It contains modified versions of several open source repositories that were used for experimentation though not all of these were reported in the paper.
 These are the reported models and their corresponding folders:
 1. YOLOv3: [[yolov3]](yolov3)
-2. YOLOv2: [[darkflow]](darkflow)
-3. YOLOv1: [[yolo]](yolo)
-4. All other detectors and Mask RCNN: [[tf_api]](tf_api)
+2. All other tested detectors and Mask RCNN: [[tf_api]](tf_api)
+3. Evaluation tools: [[mAP]](mAP)
 4. Labeling tool and scripts: [[labelling_tool]](labelling_tool)
 
 Animal Detection in Man-made Environments using Deep Learning
