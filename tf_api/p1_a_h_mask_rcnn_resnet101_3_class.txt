@@ -1,0 +1,6 @@
+p1_bear_a_mask_rcnn_resnet101_1
+p1_bear_h_mask_rcnn_resnet101_1
+p1_coyote_a_mask_rcnn_resnet101_1
+p1_coyote_h_mask_rcnn_resnet101_1
+p1_deer_a_mask_rcnn_resnet101_1
+p1_deer_h_mask_rcnn_resnet101_1

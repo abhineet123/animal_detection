@@ -1,0 +1,26 @@
+# bear
+
+python3 visualize.py root_dir=/data/acamp/acamp20k seq_paths=prototype_1/p1_bear_a_1,p1_mask_rcnn_resnet101/p1_bear_a_mask_rcnn_resnet101_1,p1_siam_mask_davis/p1_bear_a_siam_mask_davis_1,p1_no_mask/p1_bear_a_no_mask_1 class_names_path=data/predefined_classes_10k.txt n_vis=4 save=1 save_fmt=jpg save_dir=mask_rcnn_resnet101_no_mask_siam_mask_davisnvis_4__bear_airport labels=manual,mask_rcnn,siam_mask_davis,no_mask show_img=0 grid_size=1x4
+
+python3 visualize.py root_dir=/data/acamp/acamp20k seq_paths=prototype_1/p1_bear_h_1,p1_mask_rcnn_resnet101/p1_bear_h_mask_rcnn_resnet101_1,p1_siam_mask_davis/p1_bear_h_siam_mask_davis_1,p1_no_mask/p1_bear_h_no_mask_1 class_names_path=data/predefined_classes_10k.txt n_vis=4 save=1 save_fmt=jpg save_dir=mask_rcnn_resnet101_no_mask_siam_mask_davisnvis_4__bear_highway labels=manual,mask_rcnn,siam_mask_davis,no_mask show_img=0 grid_size=1x4
+
+# moose
+
+python3 visualize.py root_dir=/data/acamp/acamp20k seq_paths=prototype_1/p1_moose_a_1,p1_mask_rcnn_resnet101/p1_moose_a_mask_rcnn_resnet101_1,p1_siam_mask_davis/p1_moose_a_siam_mask_davis_1,p1_no_mask/p1_moose_a_no_mask_1 class_names_path=data/predefined_classes_10k.txt n_vis=4 save=1 save_fmt=jpg save_dir=mask_rcnn_resnet101_no_mask_siam_mask_davisnvis_4__moose_airport labels=manual,mask_rcnn,siam_mask,no_mask show_img=0 grid_size=1x4
+
+python3 visualize.py root_dir=/data/acamp/acamp20k seq_paths=prototype_1/p1_moose_h_1,p1_mask_rcnn_resnet101/p1_moose_h_mask_rcnn_resnet101_1,p1_siam_mask_davis/p1_moose_h_siam_mask_davis_1,p1_no_mask/p1_moose_h_no_mask_1 class_names_path=data/predefined_classes_10k.txt n_vis=4 save=1 save_fmt=jpg save_dir=mask_rcnn_resnet101_no_mask_siam_mask_davisnvis_4__moose_highway labels=manual,mask_rcnn,siam_mask,no_mask show_img=1 grid_size=1x4 vis.write_frame_id=0 vis.text.size=3 vis.text.font=5 vis.text.offset=5,50
+
+# coyote
+
+python3 visualize.py root_dir=/data/acamp/acamp20k seq_paths=prototype_1/p1_coyote_a_1,p1_mask_rcnn_resnet101/p1_coyote_a_mask_rcnn_resnet101_1,p1_siam_mask_davis/p1_coyote_a_siam_mask_davis_1,p1_no_mask/p1_coyote_a_no_mask_1 class_names_path=data/predefined_classes_10k.txt n_vis=4 save=1 save_fmt=jpg save_dir=mask_rcnn_resnet101_no_mask_siam_mask_davisnvis_4__coyote_airport labels=manual,mask_rcnn,siam_mask,no_mask show_img=1 grid_size=1x4 vis.write_frame_id=0 vis.text.size=3 vis.text.font=5 vis.text.offset=5,50
+
+python3 visualize.py root_dir=/data/acamp/acamp20k seq_paths=prototype_1/p1_coyote_h_1,p1_mask_rcnn_resnet101/p1_coyote_h_mask_rcnn_resnet101_1,p1_siam_mask_davis/p1_coyote_h_siam_mask_davis_1,p1_no_mask/p1_coyote_h_no_mask_1 class_names_path=data/predefined_classes_10k.txt n_vis=4 save=1 save_fmt=jpg save_dir=mask_rcnn_resnet101_no_mask_siam_mask_davisnvis_4__coyote_highway labels=manual,mask_rcnn,siam_mask_davis,no_mask show_img=0 grid_size=1x4 vis.write_frame_id=0 vis.text.size=2
+
+# deer
+
+python3 visualize.py root_dir=/data/acamp/acamp20k seq_paths=prototype_1/p1_deer_a_1,p1_mask_rcnn_resnet101/p1_deer_a_mask_rcnn_resnet101_1,p1_siam_mask_davis/p1_deer_a_siam_mask_davis_1,p1_no_mask/p1_deer_a_no_mask_1 class_names_path=data/predefined_classes_10k.txt n_vis=4 save=1 save_fmt=jpg save_dir=mask_rcnn_resnet101_no_mask_siam_mask_davisnvis_4__deer_airport labels=manual,mask_rcnn,siam_mask_davis,no_mask show_img=0 grid_size=1x4
+
+python3 visualize.py root_dir=/data/acamp/acamp20k seq_paths=prototype_1/p1_deer_h_1,p1_mask_rcnn_resnet101/p1_deer_h_mask_rcnn_resnet101_1,p1_siam_mask_davis/p1_deer_h_siam_mask_davis_1,p1_no_mask/p1_deer_h_no_mask_1 class_names_path=data/predefined_classes_10k.txt n_vis=4 save=1 save_fmt=jpg save_dir=mask_rcnn_resnet101_no_mask_siam_mask_davisnvis_4__deer_highway labels=manual,mask_rcnn,siam_mask_davis,no_mask show_img=0 grid_size=1x4
+
+ 
+

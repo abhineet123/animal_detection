@@ -1,0 +1,5 @@
+person
+bear
+deer
+bison
+elk

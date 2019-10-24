@@ -1,0 +1,68 @@
+# done
+E:\Datasets\acamp\acamp20k\moose\moose_1_2	urban/later_magnified	1
+E:\Datasets\acamp\acamp20k\moose\moose_5_2	road	1
+E:\Datasets\acamp\acamp20k\moose\moose_7_1	road/running/blur	1
+E:\Datasets\acamp\acamp20k\moose\moose_19_2	running/large/urban	1
+E:\Datasets\acamp\acamp20k\moose\moose_19_4	large/urban/snow	1
+E:\Datasets\acamp\acamp20k\moose\moose_19_5	snow/running/jumping	1
+E:\Datasets\acamp\acamp20k\moose\moose_19_6	urban/road/large	1
+E:\Datasets\acamp\acamp20k\moose\moose_19_7	road/large	1
+E:\Datasets\acamp\acamp20k\moose\moose_20_1	urban/road/large/side_view
+E:\Datasets\acamp\acamp20k\moose\moose_jesse_2_2_w	watermark	1
+
+# to_do
+
+E:\Datasets\acamp\acamp20k\moose\moose_4_2	urban/two_fighting
+E:\Datasets\acamp\acamp20k\moose\moose_4_3	urban/two_fighting/blur
+E:\Datasets\acamp\acamp20k\moose\moose_5_12	grass
+E:\Datasets\acamp\acamp20k\moose\moose_5_13	grass/back_view
+E:\Datasets\acamp\acamp20k\moose\moose_6_2	grass/running
+E:\Datasets\acamp\acamp20k\moose\moose_12_3	grass/back_view/running/two
+E:\Datasets\acamp\acamp20k\moose\moose_13_1	road/back_view/running/
+E:\Datasets\acamp\acamp20k\moose\moose_14_1	small/snow
+E:\Datasets\acamp\acamp20k\moose\moose_15_1	grass/running/slope
+E:\Datasets\acamp\acamp20k\moose\moose_19_3	large/urban/later/slight_grass
+
+E:\Datasets\acamp\acamp20k\moose\moose_21_1....	snow/motion_blur
+E:\Datasets\acamp\acamp20k\moose\moose_jesse_1_2_w	snow/water/smallish
+
+E:\Datasets\acamp\acamp20k\moose\nn\moose_jesse_8_4	small/grass
+E:\Datasets\acamp\acamp20k\moose\nn\moose_jesse_8_5	small/grass
+E:\Datasets\acamp\acamp20k\moose\nn\moose_jesse_10_2	urban/watermark/leaning
+E:\Datasets\acamp\acamp20k\moose\nn\moose_jesse_11_w	rocky
+E:\Datasets\acamp\acamp20k\moose\nn\moose_jesse_12_w	rocky/back
+E:\Datasets\acamp\acamp20k\moose\nn\moose_jesse_13_w	rocky/side
+E:\Datasets\acamp\acamp20k\moose\nn\moose_jesse_13_w	back/grass
+E:\Datasets\acamp\acamp20k\moose\nn\moose_jesse_19_w	baby/grass/leaning
+E:\Datasets\acamp\acamp20k\moose\nn\moose_jesse_20_2_w......	road
+
+
+
+
+
+
+
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

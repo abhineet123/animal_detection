@@ -1,0 +1,4 @@
+
+CUDA_VISIBLE_DEVICES=0 python3 test.py ckpt_path=results/first_training_f-rcnn_inception_v2/inference/frozen_inference_graph.pb labels_path=data/wildlife_label_map.pbtxt file_name=videos/grizzly_bear_5.mp4 save_file_name=results/grizzly_bear_5_det_batch_25.mp4 n_frames=0 batch_size=25
+
+CUDA_VISIBLE_DEVICES=0 python3 test.py ckpt_path=results/first_training_f-rcnn_inception_v2/inference/frozen_inference_graph.pb labels_path=data/wildlife_label_map.pbtxt file_name=videos/grizzly_bear_6.mp4 save_file_name=results/grizzly_bear_6_det_batch_25.mp4 n_frames=0 batch_size=25

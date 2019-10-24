@@ -1,0 +1,32 @@
+# grass
+
+E:\Datasets\acamp\acamp20k\bear\bear_2...
+E:\Datasets\acamp\acamp20k\bear\bear_14_7...
+
+# small
+E:\Datasets\acamp\acamp20k\bear\bear_7_3...
+
+# blurry
+E:\Datasets\acamp\acamp20k\bear\bear_18_1...
+
+
+# done
+E:\Datasets\acamp\acamp20k\bear\bear_1_1_even_10	10
+E:\Datasets\acamp\acamp20k\bear\bear_8_1	11
+E:\Datasets\acamp\acamp20k\bear\bear_8_2	6
+E:\Datasets\acamp\acamp20k\bear\bear_10_1	6
+E:\Datasets\acamp\acamp20k\bear\bear_10_2	7
+E:\Datasets\acamp\acamp20k\bear\bear_14_1	5
+E:\Datasets\acamp\acamp20k\bear\bear_14_6	5
+E:\Datasets\acamp\acamp20k\bear\bear_16_3	11
+E:\Datasets\acamp\acamp20k\bear\bear_19_5	6
+E:\Datasets\acamp\acamp20k\bear\bear_jesse_7_1_w	8
+E:\Datasets\acamp\acamp20k\bear\bear_jesse_10_1_w	10
+E:\Datasets\acamp\acamp20k\bear\bear_jesse_18_1_w	8
+E:\Datasets\acamp\acamp20k\bear\bear_jesse_23_1_w	10
+
+# to-do
+
+E:\Datasets\acamp\acamp20k\bear\bear_jesse_32_1_w...
+E:\Datasets\acamp\acamp20k\bear\bear_jesse_38_1_w...
+

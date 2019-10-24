@@ -1,0 +1,3 @@
+CUDA_VISIBLE_DEVICES=0 python3 test.py model_list=trained_models.txt model_id=22 list_file_name=acamp40k3_test_no_human.txt root_dir=/data/acamp/acamp20k n_frames=0 batch_size=1 n_classes=3 gpu_memory_fraction=0.3
+CUDA_VISIBLE_DEVICES=0 python3 test.py model_list=trained_models.txt model_id=23 list_file_name=acamp40k3_test_no_human.txt root_dir=/data/acamp/acamp20k n_frames=0 batch_size=1 n_classes=3 gpu_memory_fraction=0.3
+CUDA_VISIBLE_DEVICES=0 python3 test.py model_list=trained_models.txt model_id=24 list_file_name=acamp40k3_test_no_human.txt root_dir=/data/acamp/acamp20k n_frames=0 batch_size=1 n_classes=3 gpu_memory_fraction=0.3

@@ -1,0 +1,6 @@
+classes=6
+train=/data/acamp/acamp20k/acamp15k6_vid_entire_seq.txt
+valid=/data/acamp/acamp20k/acamp15k6_vid_entire_seq_inv_even_5.txt
+names=../labelling_tool/data/predefined_classes_20k6.txt
+backup=backup/
+eval=coco

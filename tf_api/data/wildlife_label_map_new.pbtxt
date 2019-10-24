@@ -1,0 +1,34 @@
+item {
+	id: 1
+	name: 'bear'	
+}
+
+item {
+	id: 2
+	name: 'moose'
+}
+
+item {
+	id: 3
+	name: 'coyote'
+}
+
+item {
+	id: 4
+	name: 'deer'
+}
+
+item {
+	id: 5
+	name: 'horse'
+}
+
+item {
+	id: 6
+	name: 'cow'
+}
+
+item {
+	id: 7
+	name: 'elk'
+}

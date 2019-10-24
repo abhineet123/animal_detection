@@ -1,0 +1,28 @@
+
+#### more bear videos
+
+CUDA_VISIBLE_DEVICES=1 python3 test.py ckpt_path=trained/faster_rcnn_nas_coco_2018_01_28/inference/frozen_inference_graph.pb labels_path=data/wildlife_label_map.pbtxt file_name=videos/grizzly_bear_1.mp4 save_file_name=results/faster_rcnn_nas_coco_2018_01_28/grizzly_bear_1_det_batch_3.mkv n_frames=0 batch_size=3
+
+CUDA_VISIBLE_DEVICES=1 python3 test.py ckpt_path=trained/faster_rcnn_nas_coco_2018_01_28/inference/frozen_inference_graph.pb labels_path=data/wildlife_label_map.pbtxt file_name=videos/grizzly_bear_2.mp4 save_file_name=results/faster_rcnn_nas_coco_2018_01_28/grizzly_bear_2_det_batch_3.mkv n_frames=0 batch_size=3
+
+CUDA_VISIBLE_DEVICES=1 python3 test.py ckpt_path=trained/faster_rcnn_nas_coco_2018_01_28/inference/frozen_inference_graph.pb labels_path=data/wildlife_label_map.pbtxt file_name=videos/grizzly_bear_3.mp4 save_file_name=results/faster_rcnn_nas_coco_2018_01_28/grizzly_bear_3_det_batch_3.mkv n_frames=0 batch_size=3
+
+CUDA_VISIBLE_DEVICES=1 python3 test.py ckpt_path=trained/faster_rcnn_nas_coco_2018_01_28/inference/frozen_inference_graph.pb labels_path=data/wildlife_label_map.pbtxt file_name=videos/grizzly_bear_4.mp4 save_file_name=results/faster_rcnn_nas_coco_2018_01_28/grizzly_bear_4_det_batch_3.mkv n_frames=0 batch_size=3
+
+CUDA_VISIBLE_DEVICES=1 python3 test.py ckpt_path=trained/faster_rcnn_nas_coco_2018_01_28/inference/frozen_inference_graph.pb labels_path=data/wildlife_label_map.pbtxt file_name=videos/grizzly_bear_5.mp4 save_file_name=results/faster_rcnn_nas_coco_2018_01_28/grizzly_bear_5_det_batch_3.mkv n_frames=0 batch_size=3
+
+CUDA_VISIBLE_DEVICES=1 python3 test.py ckpt_path=trained/faster_rcnn_nas_coco_2018_01_28/inference/frozen_inference_graph.pb labels_path=data/wildlife_label_map.pbtxt file_name=videos/grizzly_bear_6.mp4 save_file_name=results/faster_rcnn_nas_coco_2018_01_28/grizzly_bear_6_det_batch_3.mkv n_frames=0 batch_size=3
+
+### coyote
+
+CUDA_VISIBLE_DEVICES=1 python3 test.py ckpt_path=trained/faster_rcnn_nas_coco_2018_01_28/inference/frozen_inference_graph.pb labels_path=data/wildlife_label_map.pbtxt file_name=videos/coyote_5.mp4 save_file_name=results/faster_rcnn_nas_coco_2018_01_28/coyote_5_det.mkv n_frames=0 batch_size=3
+
+CUDA_VISIBLE_DEVICES=1 python3 test.py ckpt_path=trained/faster_rcnn_nas_coco_2018_01_28/inference/frozen_inference_graph.pb labels_path=data/wildlife_label_map.pbtxt file_name=videos/coyote_6.mp4 save_file_name=results/faster_rcnn_nas_coco_2018_01_28/coyote_6_det.mkv n_frames=0 batch_size=3
+
+CUDA_VISIBLE_DEVICES=1 python3 test.py ckpt_path=trained/faster_rcnn_nas_coco_2018_01_28/inference/frozen_inference_graph.pb labels_path=data/wildlife_label_map.pbtxt file_name=videos/coyote_7.mp4 save_file_name=results/faster_rcnn_nas_coco_2018_01_28/coyote_7_det.mkv n_frames=0 batch_size=3
+
+CUDA_VISIBLE_DEVICES=1 python3 test.py ckpt_path=trained/faster_rcnn_nas_coco_2018_01_28/inference/frozen_inference_graph.pb labels_path=data/wildlife_label_map.pbtxt file_name=videos/coyote_8.mp4 save_file_name=results/faster_rcnn_nas_coco_2018_01_28/coyote_8_det.mkv n_frames=0 batch_size=3
+
+CUDA_VISIBLE_DEVICES=1 python3 test.py ckpt_path=trained/faster_rcnn_nas_coco_2018_01_28/inference/frozen_inference_graph.pb labels_path=data/wildlife_label_map.pbtxt file_name=videos/coyote_9.mp4 save_file_name=results/faster_rcnn_nas_coco_2018_01_28/coyote_9_det.mkv n_frames=0 batch_size=3
+
+CUDA_VISIBLE_DEVICES=1 python3 test.py ckpt_path=trained/faster_rcnn_nas_coco_2018_01_28/inference/frozen_inference_graph.pb labels_path=data/wildlife_label_map.pbtxt file_name=videos/coyote_10.mp4 save_file_name=results/faster_rcnn_nas_coco_2018_01_28/coyote_10_det.mkv n_frames=0 batch_size=3

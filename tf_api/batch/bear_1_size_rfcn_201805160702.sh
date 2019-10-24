@@ -1,0 +1,17 @@
+CUDA_VISIBLE_DEVICES=0 python3 test.py ckpt_path=trained/rfcn_resnet101_coco_2018_01_28/inference/frozen_inference_graph.pb labels_path=data/wildlife_label_map.pbtxt file_name=videos/grizzly_bear_1.mp4 save_file_name=results/rfcn_resnet101_coco_2018_01_28/grizzly_bear_1_det_batch_10.mp4 n_frames=0 batch_size=1
+
+CUDA_VISIBLE_DEVICES=1 python3 test.py ckpt_path=trained/rfcn_resnet101_coco_2018_01_28/inference/frozen_inference_graph.pb labels_path=data/wildlife_label_map.pbtxt file_name=videos/grizzly_bear_1.mp4 save_file_name=results/rfcn_resnet101_coco_2018_01_28/grizzly_bear_1_det_batch_10.mp4 n_frames=0 batch_size=2
+
+CUDA_VISIBLE_DEVICES=0 python3 test.py ckpt_path=trained/rfcn_resnet101_coco_2018_01_28/inference/frozen_inference_graph.pb labels_path=data/wildlife_label_map.pbtxt file_name=videos/grizzly_bear_1.mp4 save_file_name=results/rfcn_resnet101_coco_2018_01_28/grizzly_bear_1_det_batch_10.mp4 n_frames=0 batch_size=5
+
+CUDA_VISIBLE_DEVICES=1 python3 test.py ckpt_path=trained/rfcn_resnet101_coco_2018_01_28/inference/frozen_inference_graph.pb labels_path=data/wildlife_label_map.pbtxt file_name=videos/grizzly_bear_1.mp4 save_file_name=results/rfcn_resnet101_coco_2018_01_28/grizzly_bear_1_det_batch_10.mp4 n_frames=0 batch_size=10
+
+CUDA_VISIBLE_DEVICES=1 python3 test.py ckpt_path=trained/rfcn_resnet101_coco_2018_01_28/inference/frozen_inference_graph.pb labels_path=data/wildlife_label_map.pbtxt file_name=videos/grizzly_bear_1.mp4 save_file_name=results/rfcn_resnet101_coco_2018_01_28/grizzly_bear_1_det_batch_25.mp4 n_frames=0 batch_size=25
+
+CUDA_VISIBLE_DEVICES=1 python3 test.py ckpt_path=trained/rfcn_resnet101_coco_2018_01_28/inference/frozen_inference_graph.pb labels_path=data/wildlife_label_map.pbtxt file_name=videos/grizzly_bear_1.mp4 save_file_name=results/rfcn_resnet101_coco_2018_01_28/grizzly_bear_1_det_batch_30.mp4 n_frames=0 batch_size=30
+
+CUDA_VISIBLE_DEVICES=1 python3 test.py ckpt_path=trained/rfcn_resnet101_coco_2018_01_28/inference/frozen_inference_graph.pb labels_path=data/wildlife_label_map.pbtxt file_name=videos/grizzly_bear_1.mp4 save_file_name=results/rfcn_resnet101_coco_2018_01_28/grizzly_bear_1_det_batch_40.mp4 n_frames=0 batch_size=40
+
+CUDA_VISIBLE_DEVICES=0 python3 test.py ckpt_path=trained/rfcn_resnet101_coco_2018_01_28/inference/frozen_inference_graph.pb labels_path=data/wildlife_label_map.pbtxt file_name=videos/grizzly_bear_1.mp4 save_file_name=results/rfcn_resnet101_coco_2018_01_28/grizzly_bear_1_det_batch_50.mp4 n_frames=0 batch_size=50
+
+CUDA_VISIBLE_DEVICES=1 python3 test.py ckpt_path=trained/rfcn_resnet101_coco_2018_01_28/inference/frozen_inference_graph.pb labels_path=data/wildlife_label_map.pbtxt file_name=videos/grizzly_bear_1.mp4 save_file_name=results/rfcn_resnet101_coco_2018_01_28/grizzly_bear_1_det_batch_55.mp4 n_frames=0 batch_size=55

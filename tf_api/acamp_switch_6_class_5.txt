@@ -1,0 +1,15 @@
+bear_19_4
+bear_19_5
+bear_19_6
+bear_19_1
+bear_19_2
+bear_19_3
+deer_2_4
+deer_2_2
+moose_17_2
+moose_17_1
+coyote_3_2
+coyote_3_5
+coyote_3_1
+elk_5_w
+bison_40_w

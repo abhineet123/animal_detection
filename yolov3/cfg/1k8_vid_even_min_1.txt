@@ -1,0 +1,6 @@
+classes=8
+train=/data/acamp/acamp20k/1k8_vid_even_min_1.txt
+valid=/data/acamp/acamp20k/1k8_vid_even_min_1_inv_1_per_seq.txt
+names=../labelling_tool/data/predefined_classes_4k8.txt
+backup=backup/
+eval=coco

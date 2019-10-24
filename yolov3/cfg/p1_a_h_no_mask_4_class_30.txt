@@ -1,0 +1,6 @@
+classes=4
+train=/data/acamp/acamp20k/p1_a_h_no_mask_4_class_30.txt
+valid=/data/acamp/acamp20k/p1_a_h_no_mask_4_class_30_inverted.txt
+names=../labelling_tool/data/predefined_classes_20k4.txt
+backup=backup/
+eval=coco

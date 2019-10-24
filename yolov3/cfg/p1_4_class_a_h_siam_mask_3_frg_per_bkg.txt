@@ -1,0 +1,6 @@
+classes=4
+train=/data/acamp/acamp20k/p1_4_class_a_h_siam_mask_3_frg_per_bkg.txt
+valid=/data/acamp/acamp20k/p1_4_class_a_h_siam_mask_3_frg_per_bkg_inv.txt
+names=../labelling_tool/data/predefined_classes_20k4.txt
+backup=backup/
+eval=coco

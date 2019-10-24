@@ -1,0 +1,6 @@
+/data/acamp/acamp10k/human_biwi_lp-left
+/data/acamp/acamp10k/human_biwi_seq01-img-left
+/data/acamp/acamp10k/human_biwi_seq02-img-left
+/data/acamp/acamp10k/human_biwi_seq03-img-left
+/data/acamp/acamp10k/human_biwi_seq04-img-left
+/data/acamp/acamp10k/human_biwi_sunny_day-img-left

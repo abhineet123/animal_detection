@@ -1,0 +1,4 @@
+coyote
+deer
+bear
+moose

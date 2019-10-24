@@ -1,0 +1,6 @@
+classes=1
+train=/data/acamp/acamp20k/p1_bear_a_h_mask_rcnn_resnet101_1_seq_to_samples_3_frg_per_bkg.txt
+valid=/data/acamp/acamp20k/p1_bear_a_h_mask_rcnn_resnet101_1_seq_to_samples_3_frg_per_bkg_inv.txt
+names=../labelling_tool/data/predefined_classes_bear.txt
+backup=backup/
+eval=coco

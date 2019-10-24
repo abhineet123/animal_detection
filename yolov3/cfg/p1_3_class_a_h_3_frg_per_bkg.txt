@@ -1,0 +1,6 @@
+classes=3
+train=/data/acamp/acamp20k/p1_3_class_a_h_3_frg_per_bkg.txt
+valid=/data/acamp/acamp20k/p1_3_class_a_h_3_frg_per_bkg_inv.txt
+names=../labelling_tool/data/predefined_classes_20k3a.txt
+backup=backup/
+eval=coco

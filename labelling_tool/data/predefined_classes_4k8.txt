@@ -1,0 +1,8 @@
+bear
+moose
+coyote
+deer
+bison
+elk
+cow
+horse

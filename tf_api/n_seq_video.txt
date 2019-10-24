@@ -1,0 +1,8 @@
+bear: 92
+bison: 88
+coyote: 113
+deer: 67
+elk: 78
+moose: 97
+cow: 13
+horse: 23

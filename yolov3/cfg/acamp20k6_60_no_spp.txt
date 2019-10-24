@@ -1,0 +1,6 @@
+classes=6
+train=/data/acamp/acamp20k/acamp20k6_60_train_yolov3_pt.txt
+valid=/data/acamp/acamp20k/acamp20k6_5_from_end_yolov3_pt.txt
+names=../labelling_tool/data/predefined_classes_20k6.txt
+backup=backup/
+eval=coco

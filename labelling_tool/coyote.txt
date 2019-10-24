@@ -1,0 +1,35 @@
+# done
+
+coyote_1_2	1
+coyote_9_1	1
+coyote_10_5	1
+coyote_b	(latter)	1
+coyote_c	translation)	2
+coyote_d	(start)	1
+coyote_doc_1_1	(good)	1
+coyote_jesse_static_1	(good)	2
+
+# to do
+
+K:\acamp\acamp20k\coyote\coyote_doc_2_2 (start)
+K:\acamp\acamp20k\coyote\coyote_doc_3_2
+K:\acamp\acamp20k\coyote\coyote_doc_3_3...(translation)
+K:\acamp\acamp20k\coyote\coyote_doc_5_1...(translation, intermittent static)
+K:\acamp\acamp20k\coyote\coyote_doc_6_1...(translation)
+K:\acamp\acamp20k\coyote\coyote_doc_8_1...
+K:\acamp\acamp20k\coyote\coyote_doc_8_3...
+K:\acamp\acamp20k\coyote\coyote_doc_10_2...
+K:\acamp\acamp20k\coyote\coyote_doc_17_2...(translation)
+K:\acamp\acamp20k\coyote\coyote_doc_18_1...
+K:\acamp\acamp20k\coyote\coyote_doc_19_1...(grass)
+K:\acamp\acamp20k\coyote\coyote_doc_26_1...(translation, start)
+K:\acamp\acamp20k\coyote\coyote_f...(translation)
+K:\acamp\acamp20k\coyote\coyote_jesse_3_1...
+K:\acamp\acamp20k\coyote\coyote_jesse_10_1...translation
+K:\acamp\acamp20k\coyote\coyote_jesse_13_1...translation
+
+
+
+
+ 
+

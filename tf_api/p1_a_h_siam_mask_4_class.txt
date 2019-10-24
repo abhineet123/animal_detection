@@ -1,0 +1,8 @@
+p1_coyote_a_siam_mask_1
+p1_deer_a_siam_mask_1
+p1_moose_a_siam_mask_1
+p1_bear_a_siam_mask_1
+p1_coyote_h_siam_mask_1
+p1_deer_h_siam_mask_1
+p1_moose_h_siam_mask_1
+p1_bear_h_siam_mask_1

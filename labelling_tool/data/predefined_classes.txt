@@ -1,0 +1,13 @@
+bear
+moose
+coyote
+deer
+horse
+cow
+elk
+caribou
+wolf
+cougar
+person
+bison
+background

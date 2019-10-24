@@ -1,0 +1,2 @@
+python2 csv_to_record.py --img_paths_list=acamp40k3_coco_train.txt --input_path=/data/acamp/acamp20k/ --output_path=/data/acamp/acamp20k/acamp40k3_coco_train.record -class_names_path=../labelling_tool/data/predefined_classes_20k3.txt
+CUDA_VISIBLE_DEVICES=0 python3 models/research/object_detection/train.py --logtostderr --pipeline_config_path=configs/pre_trained/faster_rcnn_resnet101_coco_2018_01_28/faster_rcnn_resnet101_40k3_coco.config --train_dir=trained/faster_rcnn_resnet101_coco_2018_01_28_40k3_coco

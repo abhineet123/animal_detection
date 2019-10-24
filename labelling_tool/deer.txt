@@ -1,0 +1,63 @@
+# done
+
+E:\Datasets\acamp\acamp20k\deer\deer_5_1	(blurry/water occlusion)	1
+E:\Datasets\acamp\acamp20k\deer\deer_6_1		1
+E:\Datasets\acamp\acamp20k\deer\deer_6_3	(urban)	1
+E:\Datasets\acamp\acamp20k\deer\deer_10_1	(later)	1
+E:\Datasets\acamp\acamp20k\deer\deer_10_3		1
+E:\Datasets\acamp\acamp20k\deer\deer_12_1 	(later/slight_grass)	1
+E:\Datasets\acamp\acamp20k\deer\deer_jesse_2_1	(snow/top_view)	1
+E:\Datasets\acamp\acamp20k\deer\deer_jesse_2_2	(snow/running/jumping)	1
+E:\Datasets\acamp\acamp20k\deer\deer_jesse_3_3	(big)	1
+E:\Datasets\acamp\acamp20k\deer\deer_jesse_7_6	slight_blur	1
+E:\Datasets\acamp\acamp20k\deer\deer_jesse_9_6	(snow)	1
+
+
+
+# to_do
+
+E:\Datasets\acamp\acamp20k\deer\deer_10_5 (later/running)
+E:\Datasets\acamp\acamp20k\deer\deer_jesse_3_2 (small)
+E:\Datasets\acamp\acamp20k\deer\deer_jesse_4_2 (small/running/jumping/slight_grass)
+
+E:\Datasets\acamp\acamp20k\deer\deer_jesse_7_7
+
+## blurry
+
+E:\Datasets\acamp\acamp20k\deer\deer_4_1
+E:\Datasets\acamp\acamp20k\deer\deer_8_1
+
+## slight_grass 
+
+E:\Datasets\acamp\acamp20k\deer\deer_2_4
+E:\Datasets\acamp\acamp20k\deer\deer_10_4
+E:\Datasets\acamp\acamp20k\deer\deer_10_6  (later)
+
+E:\Datasets\acamp\acamp20k\deer\deer_jesse_3_1
+E:\Datasets\acamp\acamp20k\deer\deer_jesse_9_1 (watermark)
+
+## slight_occlusion
+
+E:\Datasets\acamp\acamp20k\deer\deer_10_2
+
+## urban
+
+E:\Datasets\acamp\acamp20k\deer\deer_6_2 (urban)
+E:\Datasets\acamp\acamp20k\deer\deer_jesse_5_1
+E:\Datasets\acamp\acamp20k\deer\deer_jesse_5_2 (later)
+E:\Datasets\acamp\acamp20k\deer\deer_jesse_9_2 (watermark)
+E:\Datasets\acamp\acamp20k\deer\deer_jesse_9_4 (later/watermark)
+
+
+# small
+
+E:\Datasets\acamp\acamp20k\deer\deer_3_2
+
+## slightly_better
+
+E:\Datasets\acamp\acamp20k\deer\deer_3_3
+E:\Datasets\acamp\acamp20k\deer\deer_4_2
+E:\Datasets\acamp\acamp20k\deer\deer_7_1
+
+
+

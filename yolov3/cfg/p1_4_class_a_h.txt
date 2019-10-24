@@ -1,0 +1,6 @@
+classes=4
+train=/data/acamp/acamp20k/p1_4_class_a_h.txt
+valid=/data/acamp/acamp20k/prototype_1_vid_4_class_no_moving_bkg.txt
+names=../labelling_tool/data/predefined_classes_20k4.txt
+backup=backup/
+eval=coco

@@ -1,0 +1,7 @@
+bear_10_1
+bison_10_1
+coyote_10_1
+deer_10_1
+elk_10_w
+moose_10_1
+

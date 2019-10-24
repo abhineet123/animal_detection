@@ -1,0 +1,6 @@
+classes=3
+train=/data/acamp/acamp20k/p1_a_h_3_class_30.txt
+valid=/data/acamp/acamp20k/p1_a_h_3_class_30_inverted.txt
+names=../labelling_tool/data/predefined_classes_20k3a.txt
+backup=backup/
+eval=coco
