@@ -1,3 +1,6 @@
+Animal Detection in Man-made Environments using Deep Learning
+-------------------------------------------------------------
+
 This repository provides python code for all experiments reported in this paper:
 
 Animal Detection in Man-made Environments
@@ -9,9 +12,6 @@ These are the reported models and their corresponding folders:
 2. All other tested detectors and Mask RCNN: [[tf_api]](tf_api)
 3. Evaluation tools: [[mAP]](mAP)
 4. Labeling tool and scripts: [[labelling_tool]](labelling_tool)
-
-Animal Detection in Man-made Environments using Deep Learning
--------------------------------------------------------------
 
 The commands for running each model are provided in a .md file in the corresponding folder.
 For example, commands for RetinaNet and YOLOv3 are in [tf_api/retinanet.md](tf_api/retinanet.md) and [yolov3/yolov3.md](yolov3/yolov3.md).
