@@ -12,8 +12,8 @@ This is a heavily modified version of the [original tool](https://github.com/tzu
 
 Demo:
 
-\<<https://youtu.be/ZkjcP8s0QVQ>\>
+[![Labeling Tool Demo](https://img.youtube.com/vi/ZkjcP8s0QVQ/0.jpg)](https://youtu.be/ZkjcP8s0QVQ "Labeling Tool Demo")
 
-This tool is currently under patent review so its essential GUI components are not included here.
-However, some of the backend python scripts are included to provide limited functionality.
-Please contact [ACAMP](https://www.acamp.ca/why-work-with-us/about/contact-us/) if you would like access to the full tool for research or commercial purposes:
+This tool is currently under review for a patent application so its GUI components are not included here.
+However, some of the backend python scripts are included to provide limited functionality described in the paper.
+Please contact [ACAMP](https://www.acamp.ca/why-work-with-us/about/contact-us/) if you would like access to the full tool for research or commercial purposes.
