@@ -6,6 +6,10 @@ This repository provides python code for all experiments reported in this paper:
 Animal Detection in Man-made Environments
 [[arxiv]](https://arxiv.org/abs/1901.04412).
 
+Labeling tool demo:
+
+[![Everything Is AWESOME](https://img.youtube.com/vi/StTqXEQ2l-Y/0.jpg)](https://www.youtube.com/watch?v=StTqXEQ2l-Y "Everything Is AWESOME")
+
 It contains modified versions of several open source repositories that were used for experimentation though not all of these were reported in the paper.
 These are the reported models and their corresponding folders:
 1. YOLOv3: [[yolov3]](yolov3)
