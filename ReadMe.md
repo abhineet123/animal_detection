@@ -8,7 +8,7 @@ Animal Detection in Man-made Environments
 
 Labeling tool demo:
 
-[![Labeling Tool Demo](https://img.youtube.com/vi/ZkjcP8s0QVQ/0.jpg)](https://youtu.be/ZkjcP8s0QVQ "Labeling Tool Demo")
+[![Labeling Tool Demo](images/vid_thumbnail.png)](https://youtu.be/ZkjcP8s0QVQ "Labeling Tool Demo")
 
 It contains modified versions of several open source repositories that were used for experimentation though not all of these were reported in the paper.
 These are the reported models and their corresponding folders:
