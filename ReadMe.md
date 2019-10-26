@@ -23,7 +23,7 @@ All the accompanying data is available here :
  - [OneDrive](https://ualbertaca-my.sharepoint.com/:f:/g/personal/asingh1_ualberta_ca/Eo1tlCzIYl9Dm-dm4yL-bKwBf_mMEZh5-aZvrtnS5chyNA?e=QRztiI).
 
 
-All commands assume that the data is present under _/data/acamp/acamp20k_.
+All commands assume that the data is located under _/data/acamp/acamp20k_.
 
 The code and data are released under [creative commons attribution license](https://creativecommons.org/licenses/by/4.0/) and are free for research and commercial applications. 
 Also, individual repositories used here might have their own licenses that might be more restrictive so please refer to them as well.
