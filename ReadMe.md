@@ -18,6 +18,11 @@ The commands are organized hierarchically into categories of experiments and a t
 
 If a command does not work,  the command corresponding to some experiment cannot be found or the meaning of some command is not clear, please create an issue and we will do our best to address it.
 
+All the accompanying data is available here :
+
+ - [OneDrive](https://ualbertaca-my.sharepoint.com/:f:/g/personal/asingh1_ualberta_ca/Eo1tlCzIYl9Dm-dm4yL-bKwBf_mMEZh5-aZvrtnS5chyNA?e=QRztiI).
+
+
 All commands assume that the data is present under _/data/acamp/acamp20k_.
 
 The code and data are released under [creative commons attribution license](https://creativecommons.org/licenses/by/4.0/) and are free for research and commercial applications. 
