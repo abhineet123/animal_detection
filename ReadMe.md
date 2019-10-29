@@ -3,7 +3,7 @@
 This repository provides python code for all experiments reported in this paper:
 
 Animal Detection in Man-made Environments
-[[arxiv]](https://arxiv.org/abs/1901.04412).
+[[arxiv]](http://arxiv.org/abs/1910.11443).
 
 It contains modified versions of several open source repositories that were used for experimentation though not all of these were reported in the paper.
 These are the reported models and their corresponding folders:
@@ -28,7 +28,7 @@ All commands assume that the data is located under _/data/acamp/acamp20k_.
 The code and data are released under [creative commons attribution license](https://creativecommons.org/licenses/by/4.0/) and are free for research and commercial applications. 
 Also, individual repositories used here might have their own licenses that might be more restrictive so please refer to them as well.
 
-If you find this work useful, please consider citing [this paper](https://arxiv.org/abs/1901.04412) [[bibtex](misc/bibtex.txt)].
+If you find this work useful, please consider citing [the above paper](http://arxiv.org/abs/1910.11443) [[bibtex](cite.bib)].
 
 
 
