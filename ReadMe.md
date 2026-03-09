@@ -20,7 +20,7 @@ If a command does not work,  the command corresponding to some experiment cannot
 
 All the accompanying data is available here :
 
- - [OneDrive](https://ualbertaca-my.sharepoint.com/:f:/g/personal/asingh1_ualberta_ca/Eo1tlCzIYl9Dm-dm4yL-bKwBf_mMEZh5-aZvrtnS5chyNA?e=QRztiI).
+ - [Hugging Face](https://huggingface.co/datasets/abhineet123/animal_detection)
 
 
 All commands assume that the data is located under _/data/acamp/acamp20k_.
