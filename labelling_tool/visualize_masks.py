@@ -13,11 +13,11 @@ from libs.shape import Shape
 import tracking.Utilities as utils
 
 
-def viiualizeMasks(img_path, mask_path, csv_path, out_size='', out_dir='',
-                   save_video=1, write_text=0, show_img=1, frames_reader=None,
-                   img_ext='jpg', mask_ext='png', out_ext='mkv', codec='H264', fps=30, border=0, fixed_ar=0,
-                   include_binary=1, include_orig=1, show_bbox=1, map_to_bbox=0, apply_contour=0,
-                   writer=None, raw_mask=0):
+def viiualize_masks(img_path, mask_path, csv_path, out_size='', out_dir='',
+                    save_video=1, write_text=0, show_img=1, frames_reader=None,
+                    img_ext='jpg', mask_ext='png', out_ext='mkv', codec='H264', fps=30, border=0, fixed_ar=0,
+                    include_binary=1, include_orig=1, show_bbox=1, map_to_bbox=0, apply_contour=0,
+                    writer=None, raw_mask=0):
     global _pause, _exit
 
     _exit_seq = 0
@@ -44,7 +44,7 @@ def viiualizeMasks(img_path, mask_path, csv_path, out_size='', out_dir='',
     win_name = 'patch and mask'
 
     text_fmt = ('green', 0, 5, 1.0, 1)
-    text_color = utils.col_rgb[text_fmt[0]]
+    text_color = utils.col_bgr[text_fmt[0]]
     text_font = utils.CVConstants.fonts[text_fmt[2]]
     text_font_size = text_fmt[3]
     text_thickness = text_fmt[4]
@@ -192,8 +192,8 @@ def viiualizeMasks(img_path, mask_path, csv_path, out_size='', out_dir='',
                         curr_mask = np.zeros_like(curr_mask, dtype=np.uint8)
                         cv2.drawContours(curr_mask, contours, -1, (255, 255, 255), -1)
                     else:
-                        contours, _ = Shape.contourPtsFromMask(curr_mask)
-                        curr_mask, _ = Shape.contourPtsToMask(contours, curr_mask)
+                        contours, _ = Shape.contour_pts_from_mask(curr_mask)
+                        curr_mask, _ = Shape.contour_pts_to_mask(contours, curr_mask)
 
                 mask_h, mask_w = curr_mask.shape[:2]
 
@@ -378,7 +378,7 @@ def main():
         raise IOError('Mismatch between n_img_paths: {} and n_mask_paths: {}'.format(
             n_img_paths, n_mask_paths))
 
-    args, varargs, varkw, defaults = inspect.getargspec(viiualizeMasks)
+    args, varargs, varkw, defaults = inspect.getargspec(viiualize_masks)
     params = {k: params[k] for k in params if k in args}
     params['writer'] = None
     pprint(params)
@@ -395,7 +395,7 @@ def main():
     for seq_id in range(n_img_paths):
         img_path, mask_path = img_paths[seq_id], mask_paths[seq_id]
         print('Processing sequence {}/{}'.format(seq_id + 1, n_img_paths))
-        writer, out_size = viiualizeMasks(img_path, mask_path, csv_path, **params, )
+        writer, out_size = viiualize_masks(img_path, mask_path, csv_path, **params, )
         if not combine:
             writer.release()
             params['writer'] = None

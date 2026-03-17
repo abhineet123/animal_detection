@@ -12,8 +12,8 @@ import argparse
 
 # from ..libs.shape import Shape
 
-# RGB values for different colors
-col_rgb = {
+# BGR values for different colors
+col_bgr = {
     'snow': (250, 250, 255),
     'snow_2': (233, 233, 238),
     'snow_3': (201, 201, 205),
@@ -221,10 +221,10 @@ class CVText:
         self.bkg_color = 'black'
         self.location = 0
         self.font = 5
-        self.size = 1
+        self.size = 4
         self.thickness = 1
         self.line_type = 2
-        self.offset = (5, 15)
+        self.offset = (5, 60)
 
         self.help = {
             'font': 'Available fonts: '
@@ -250,9 +250,12 @@ class CVText:
 
         n_rows, n_cols = img.shape[:2]
         size = self.size
-        color = col_rgb[self.color]
+
+        # print('self.size: {}'.format(self.size))
+
+        color = col_bgr[self.color]
         if self.bkg_color:
-            bkg_color = col_rgb[self.bkg_color]
+            bkg_color = col_bgr[self.bkg_color]
         else:
             bkg_color = None
         font = CVConstants.fonts[self.font]
@@ -734,7 +737,7 @@ def drawRegion(img, corners, color, thickness=1, mask_img=None):
     #     cv2.drawContours(img, _contour_pts, -1, (255, 255, 255), thickness=thickness)
 
 
-def drawBox(frame, box, _id=None, color='black', thickness=2, label=None, mask=()):
+def drawBox(frame, box, _id=None, color='black', thickness=2, label=None, mask=(), xywh=True):
     """
     :type frame: np.ndarray
     :type box: np.ndarray
@@ -746,11 +749,16 @@ def drawBox(frame, box, _id=None, color='black', thickness=2, label=None, mask=(
     :rtype: None
     """
 
-    color = col_rgb[color]
+    color = col_bgr[color]
     box = box.squeeze()
     pt1 = (int(box[0]), int(box[1]))
-    pt2 = (int(box[0] + box[2]),
-           int(box[1] + box[3]))
+
+    if xywh:
+        pt2 = (int(box[0] + box[2]),
+               int(box[1] + box[3]))
+    else:
+        pt2 = (int(box[2]), int(box[3]))
+
     cv2.rectangle(frame, pt1, pt2, color, thickness=thickness)
     if _id is not None:
         if cv2.__version__.startswith('2'):
@@ -775,11 +783,11 @@ def drawBox(frame, box, _id=None, color='black', thickness=2, label=None, mask=(
         if box_str:
             cv2.putText(frame, box_str, (int(box[0] - 1), y_loc), cv2.FONT_HERSHEY_SIMPLEX,
                         0.5, color, 1, font_line_type)
-        if mask:
-            mask = np.array(mask).reshape((-1, 1, 2)).astype(np.int32)
-            # mask = np.array(mask)
-            # print('mask: {}'.format(mask))
-            cv2.drawContours(frame, mask, -1, color, thickness=thickness)
+    if mask:
+        mask = np.array(mask).reshape((-1, 1, 2)).astype(np.int32)
+        # mask = np.array(mask)
+        # print('mask: {}'.format(mask))
+        cv2.drawContours(frame, mask, -1, color, thickness=thickness)
 
 
 def drawTrajectory(frame, trajectory, color='black', thickness=2):
@@ -797,7 +805,7 @@ def drawTrajectory(frame, trajectory, color='black', thickness=2):
         pt1 = tuple(trajectory[i - 1].astype(np.int64))
         pt2 = tuple(trajectory[i].astype(np.int64))
         try:
-            cv2.line(frame, pt1, pt2, col_rgb[color], thickness=thickness)
+            cv2.line(frame, pt1, pt2, col_bgr[color], thickness=thickness)
 
         except TypeError:
             print('frame.dtype', frame.dtype)
@@ -913,9 +921,31 @@ def compareFiles(read_from_bin, fnames, dirs=None, sync_id=-1, msg=''):
     return files_are_same
 
 
+def linux_path(*args, **kwargs):
+    return os.path.join(*args, **kwargs).replace(os.sep, '/')
+
+
+def add_suffix(src_path, suffix, dst_ext=''):
+    # abs_src_path = os.path.abspath(src_path)
+    src_dir = os.path.dirname(src_path)
+    src_name, src_ext = os.path.splitext(os.path.basename(src_path))
+    if not dst_ext:
+        dst_ext = src_ext
+
+    dst_path = linux_path(src_dir, src_name + '_' + suffix + dst_ext)
+    return dst_path
+
+
 def resizeAR(src_img, width=0, height=0, return_factors=False,
              placement_type=0):
-    src_height, src_width, n_channels = src_img.shape
+    if len(src_img.shape) == 3:
+        src_height, src_width, n_channels = src_img.shape
+    elif len(src_img.shape) == 2:
+        src_height, src_width = src_img.shape
+        n_channels = 1
+    else:
+        raise AssertionError(f'unsupported image channels: {src_img.shape}')
+
     src_aspect_ratio = float(src_width) / float(src_height)
 
     if width <= 0 and height <= 0:
@@ -954,9 +984,12 @@ def resizeAR(src_img, width=0, height=0, return_factors=False,
             start_col = int(dst_width - src_width)
         start_row = 0
 
-    dst_img = np.zeros((dst_height, dst_width, n_channels), dtype=np.uint8)
+    if n_channels > 1:
+        dst_img = np.zeros((dst_height, dst_width, n_channels), dtype=np.uint8)
+    else:
+        dst_img = np.zeros((dst_height, dst_width), dtype=np.uint8)
 
-    dst_img[start_row:start_row + src_height, start_col:start_col + src_width, :] = src_img
+    dst_img[start_row:start_row + src_height, start_col:start_col + src_width, ...] = src_img
     dst_img = cv2.resize(dst_img, (width, height))
     if return_factors:
         resize_factor = float(height) / float(dst_height)
@@ -970,6 +1003,7 @@ def stackImages_ptf(img_list, grid_size=None, stack_order=0, borderless=1,
                     ann_fmt=CVText()):
     n_images = len(img_list)
     # print('grid_size: {}'.format(grid_size))
+    # print('ann_fmt.size: {}'.format(ann_fmt.size))
 
     if grid_size is None:
         n_cols = n_rows = int(np.ceil(np.sqrt(n_images)))
@@ -1365,3 +1399,191 @@ def getIntersectionArea(boxA, boxB):
     if height > 0 and width > 0:
         return height * width
     return 0
+
+
+def compute_overlaps_multi(iou, ioa_1, ioa_2, objects_1, objects_2):
+    """
+
+    compute overlap between each pair of objects in two sets of objects
+    can be used for computing overlap between all detections and annotations in a frame
+
+    :type iou: np.ndarray | None
+    :type ioa_1: np.ndarray | None
+    :type ioa_2: np.ndarray | None
+    :type object_1: np.ndarray
+    :type objects_2: np.ndarray
+    :type logger: logging.RootLogger | None
+    :rtype: None
+    """
+    # handle annoying singletons
+    if len(objects_1.shape) == 1:
+        objects_1 = objects_1.reshape((1, 4))
+
+    if len(objects_2.shape) == 1:
+        objects_2 = objects_2.reshape((1, 4))
+
+    n1 = objects_1.shape[0]
+    n2 = objects_2.shape[0]
+
+    ul_1 = objects_1[:, :2]  # n1 x 2
+    ul_1_rep = np.tile(np.reshape(ul_1, (n1, 1, 2)), (1, n2, 1))  # np(n1 x n2 x 2) -> std(n2 x 2 x n1)
+    ul_2 = objects_2[:, :2]  # n2 x 2
+    ul_2_rep = np.tile(np.reshape(ul_2, (1, n2, 2)), (n1, 1, 1))  # np(n1 x n2 x 2) -> std(n2 x 2 x n1)
+
+    size_1 = objects_1[:, 2:]  # n1 x 2
+    size_2 = objects_2[:, 2:]  # n2 x 2
+
+    br_1 = ul_1 + size_1 - 1  # n1 x 2
+    br_1_rep = np.tile(np.reshape(br_1, (n1, 1, 2)), (1, n2, 1))  # np(n1 x n2 x 2) -> std(n2 x 2 x n1)
+    br_2 = ul_2 + size_2 - 1  # n2 x 2
+    br_2_rep = np.tile(np.reshape(br_2, (1, n2, 2)), (n1, 1, 1))  # np(n1 x n2 x 2) -> std(n2 x 2 x n1)
+
+    size_inter = np.minimum(br_1_rep, br_2_rep) - np.maximum(ul_1_rep, ul_2_rep) + 1  # n2 x 2 x n1
+    size_inter[size_inter < 0] = 0
+    # np(n1 x n2 x 1) -> std(n2 x 1 x n1)
+    area_inter = np.multiply(size_inter[:, :, 0], size_inter[:, :, 1])
+
+    area_1 = np.multiply(size_1[:, 0], size_1[:, 1]).reshape((n1, 1))  # n1 x 1
+    area_1_rep = np.tile(area_1, (1, n2))  # np(n1 x n2 x 1) -> std(n2 x 1 x n1)
+    area_2 = np.multiply(size_2[:, 0], size_2[:, 1]).reshape((n2, 1))  # n2 x 1
+    area_2_rep = np.tile(area_2.transpose(), (n1, 1))  # np(n1 x n2 x 1) -> std(n2 x 1 x n1)
+    area_union = area_1_rep + area_2_rep - area_inter  # n2 x 1 x n1
+
+    if iou is not None:
+        iou[:] = np.divide(area_inter, area_union)  # n1 x n2
+    if ioa_1 is not None:
+        ioa_1[:] = np.divide(area_inter, area_1_rep)  # n1 x n2
+    if ioa_2 is not None:
+        ioa_2[:] = np.divide(area_inter, area_2_rep)  # n1 x n2
+
+
+def compute_iou_single(bb1, bb2):
+    x1, y1, w1, h1 = bb1
+    x2, y2, w2, h2 = bb2
+
+    # bb1 = [bb1[0], bb1[1], bb1[0] + bb1[2], bb1[1] + bb1[3]]
+    # bb2 = [bb2[0], bb2[1], bb2[0] + bb2[2], bb2[1] + bb2[3]]
+
+    bb_intersect = [max(x1, x2),
+                    max(y1, y2),
+                    min(x1 + w1, x2 + w2),
+                    min(y1 + h1, y2 + h2)]
+
+    iw = bb_intersect[2] - bb_intersect[0] + 1
+    ih = bb_intersect[3] - bb_intersect[1] + 1
+
+    if iw <= 0 or ih <= 0:
+        return 0
+    area_intersect = (iw * ih)
+    area_union = (w1 + 1) * (h1 + 1) + (w2 + 1) * (h2 + 1) - area_intersect
+    iou = area_intersect / area_union
+    return iou
+
+
+def compute_overlap(iou, ioa_1, ioa_2, object_1, objects_2):
+    """
+
+    compute overlap of a single object with one or more objects
+    specialized version for greater speed
+
+    :type iou: np.ndarray | None
+    :type ioa_1: np.ndarray | None
+    :type ioa_2: np.ndarray | None
+    :type object_1: np.ndarray
+    :type objects_2: np.ndarray
+    :rtype: None
+    """
+
+    n1 = object_1.shape[0]
+
+    assert n1 == 1, "object_1 should be a single object"
+
+    n = objects_2.shape[0]
+
+    ul_coord_1 = object_1[0, :2].reshape((1, 2))
+    ul_coords_2 = objects_2[:, :2]  # n x 2
+    ul_coords_inter = np.maximum(ul_coord_1, ul_coords_2)  # n x 2
+
+    size_1 = object_1[0, 2:].reshape((1, 2))
+    sizes_2 = objects_2[:, 2:]  # n x 2
+
+    br_coord_1 = ul_coord_1 + size_1 - 1
+    br_coords_2 = ul_coords_2 + sizes_2 - 1  # n x 2
+    br_coords_inter = np.minimum(br_coord_1, br_coords_2)  # n x 2
+
+    sizes_inter = br_coords_inter - ul_coords_inter + 1
+    sizes_inter[sizes_inter < 0] = 0
+    areas_inter = np.multiply(sizes_inter[:, 0], sizes_inter[:, 1]).reshape((n, 1))  # n x 1
+
+    areas_2 = None
+    if iou is not None:
+        areas_2 = np.multiply(sizes_2[:, 0], sizes_2[:, 1]).reshape((n, 1))  # n x 1
+        area_union = size_1[0, 0] * size_1[0, 1] + areas_2 - areas_inter
+        iou[:] = np.divide(areas_inter, area_union)
+    if ioa_1 is not None:
+        """intersection / area of object 1"""
+        ioa_1[:] = np.divide(areas_inter, size_1[0, 0] * size_1[0, 1])
+    if ioa_2 is not None:
+        """intersection / area of object 2"""
+        if areas_2 is None:
+            areas_2 = np.multiply(sizes_2[:, 0], sizes_2[:, 1])
+        ioa_2[:] = np.divide(areas_inter, areas_2)
+
+
+# faster version for single frame operations
+def compute_self_overlaps(iou, ioa, boxes):
+    """
+    :type iou: np.ndarray | None
+    :type ioa: np.ndarray | None
+    :type boxes: np.ndarray
+    :rtype: None
+    """
+    n = boxes.shape[0]
+
+    ul = boxes[:, :2].reshape((n, 2))  # n x 2
+    ul_rep = np.tile(np.reshape(ul, (n, 1, 2)), (1, n, 1))  # np(n x n x 2) -> std(n x 2 x n)
+    ul_2_rep = np.tile(np.reshape(ul, (1, n, 2)), (n, 1, 1))  # np(n x n x 2) -> std(n x 2 x n)
+    ul_inter = np.maximum(ul_rep, ul_2_rep)  # n x 2 x n
+
+    sizes = boxes[:, 2:].reshape((n, 2))  # n1 x 2
+    br = ul + sizes - 1  # n1 x 2
+    # size_ = boxes[:, 2:]  # n x 2
+    # br = ul + size_ - 1  # n x 2
+    br_rep = np.tile(np.reshape(br, (n, 1, 2)), (1, n, 1))  # np(n x n x 2) -> std(n x 2 x n)
+    br_2_rep = np.tile(np.reshape(br, (1, n, 2)), (n, 1, 1))  # np(n x n x 2) -> std(n x 2 x n)
+    br_inter = np.minimum(br_rep, br_2_rep)  # n x 2 x n
+
+    size_inter = br_inter - ul_inter + 1  # np(n x n x 2) -> std(n x 2 x n)
+    size_inter[size_inter < 0] = 0
+    # np(n x n x 1) -> std(n x 1 x n)
+    area_inter = np.multiply(size_inter[:, :, 0], size_inter[:, :, 1])
+
+    area = np.multiply(sizes[:, 0], sizes[:, 1]).reshape((n, 1))  # n x 1
+    area_rep = np.tile(area, (1, n))  # np(n x n x 1) -> std(n x 1 x n)
+    area_2_rep = np.tile(area.transpose(), (n, 1))  # np(n x n x 1) -> std(n x 1 x n)
+    area_union = area_rep + area_2_rep - area_inter  # n x 1 x n
+
+    if iou is not None:
+        iou[:] = np.divide(area_inter, area_union)  # n x n
+        idx = np.arange(n)
+        iou[idx, idx] = 0
+    if ioa is not None:
+        ioa[:] = np.divide(area_inter, area)  # n x n
+        idx = np.arange(n)
+        ioa[idx, idx] = 0
+
+
+def get_max_overlap_obj(objects, location):
+    """
+
+    :param objects:
+    :param location:
+    :return:
+    """
+
+    iou = np.empty((objects.shape[0], 1))
+    compute_overlaps_multi(iou, None, None, objects, location)
+    max_iou_idx = np.argmax(iou, axis=0).item()
+    max_iou = iou[max_iou_idx, 0]
+
+    return max_iou, max_iou_idx

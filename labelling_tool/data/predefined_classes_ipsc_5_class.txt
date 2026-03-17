@@ -1,0 +1,5 @@
+grade_1	green
+grade_2	cyan
+grade_3	yellow
+grade_4	magenta
+grade_5	red

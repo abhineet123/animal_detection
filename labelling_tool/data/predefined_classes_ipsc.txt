@@ -1,0 +1,6 @@
+ipsc	green
+diff	red
+good_cell	cyan
+bad_cell	magenta
+colony	purple
+cell	orange

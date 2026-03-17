@@ -58,7 +58,7 @@ def test(
     print(('%20s' + '%10s' * 6) % ('Class', 'Images', 'Targets', 'P', 'R', 'mAP', 'F1'))
     loss, p, r, f1, mp, mr, map, mf1 = 0., 0., 0., 0., 0., 0., 0., 0.
     jdict, stats, ap, ap_class = [], [], [], []
-    for batch_i, (_, imgs, targets, paths, shapes) in enumerate(tqdm(dataloader, desc='Computing mAP')):
+    for batch_i, (_, _, imgs, targets, paths, shapes) in enumerate(tqdm(dataloader, desc='Computing mAP', ncols=50)):
         targets = targets.to(device)
         imgs = imgs.to(device)
         _, _, height, width = imgs.shape  # batch size, channels, height, width

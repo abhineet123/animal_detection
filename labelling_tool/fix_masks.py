@@ -42,7 +42,7 @@ def fixMasks(img_path, mask_path, csv_path, out_size='', out_dir='',
     win_name = 'patch and mask'
 
     text_fmt = ('green', 0, 5, 1.0, 1)
-    text_color = utils.col_rgb[text_fmt[0]]
+    text_color = utils.col_bgr[text_fmt[0]]
     text_font = utils.CVConstants.fonts[text_fmt[2]]
     text_font_size = text_fmt[3]
     text_thickness = text_fmt[4]
@@ -190,8 +190,8 @@ def fixMasks(img_path, mask_path, csv_path, out_size='', out_dir='',
                         curr_mask = np.zeros_like(curr_mask, dtype=np.uint8)
                         cv2.drawContours(curr_mask, contours, -1, (255, 255, 255), -1)
                     else:
-                        contours, _ = Shape.contourPtsFromMask(curr_mask)
-                        curr_mask, _ = Shape.contourPtsToMask(contours, curr_mask)
+                        contours, _ = Shape.contour_pts_from_mask(curr_mask)
+                        curr_mask, _ = Shape.contour_pts_to_mask(contours, curr_mask)
 
                 mask_h, mask_w = curr_mask.shape[:2]
 
@@ -269,7 +269,7 @@ def fixMasks(img_path, mask_path, csv_path, out_size='', out_dir='',
                 # print('flags: {}'.format(flags))
                 pass
             elif event == cv2.EVENT_MBUTTONDOWN:
-                contour_pts, mask_pts = self.contourPtsFromMask(mask_img)
+                contour_pts, mask_pts = self.contour_pts_from_mask(mask_img)
                 draw_mask_kb = 1
                 # print('flags: {}'.format(flags))
             elif event == cv2.EVENT_MOUSEWHEEL:

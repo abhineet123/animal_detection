@@ -238,8 +238,8 @@ class Shape(object):
             _, hed_binary = cv2.threshold(hed_img, threshold, 255, cv2.THRESH_BINARY)
             cv2.imshow('hed_binary', hed_binary)
 
-            hed_pts, _ = self.contourPtsFromMask(hed_binary)
-            hed_mask, _ = self.contourPtsToMask(hed_pts, shape_patch)
+            hed_pts, _ = self.contour_pts_from_mask(hed_binary)
+            hed_mask, _ = self.contour_pts_to_mask(hed_pts, shape_patch)
             cv2.imshow('hed_mask', hed_mask)
 
         update_threshold(threshold)
@@ -415,7 +415,7 @@ class Shape(object):
         return contour_pts
 
     @staticmethod
-    def contourPtsToMask(contour_pts, patch_img, col=(255, 255, 255)):
+    def contour_pts_to_mask(contour_pts, patch_img, col=(255, 255, 255)):
         # np.savetxt('contourPtsToMask_mask_pts.txt', contour_pts, fmt='%.6f')
 
         mask_img = np.zeros_like(patch_img, dtype=np.uint8)
@@ -428,7 +428,7 @@ class Shape(object):
         return mask_img, blended_img
 
     @staticmethod
-    def contourPtsFromMask(mask_img):
+    def contour_pts_from_mask(mask_img, get_mask_pts=True):
         # print('Getting contour pts from mask...')
         if len(mask_img.shape) == 3:
             mask_img_gs = np.squeeze(mask_img[:, :, 0]).copy()
@@ -438,13 +438,19 @@ class Shape(object):
         ret = cv2.findContours(mask_img_gs, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)[-2:]
         _contour_pts, _ = ret
         if not _contour_pts:
-            return [], []
+            if get_mask_pts:
+                return [], []
+            return []
+
         contour_pts = list(np.squeeze(_contour_pts[0]))
 
         n_contours = len(_contour_pts)
         # print('n_contours: {}'.format(n_contours))
         # print('_contour_pts: {}'.format(_contour_pts))
         # print('contour_pts: {}'.format(type(contour_pts)))
+
+        if n_contours == 1 and len(contour_pts) == 2:
+            contour_pts = [contour_pts, ]
 
         if n_contours > 1:
             max_len = len(contour_pts)
@@ -455,6 +461,9 @@ class Shape(object):
                 if max_len < _len:
                     contour_pts = _pts
                     max_len = _len
+
+        if not get_mask_pts:
+            return contour_pts
 
         # print('contour_pts len: {}'.format(len(contour_pts)))
         mask_pts = [[x, y, 1] for x, y in contour_pts]
@@ -752,7 +761,7 @@ class Shape(object):
                 # print('flags: {}'.format(flags))
                 pass
             elif event == cv2.EVENT_MBUTTONDOWN:
-                contour_pts, mask_pts = self.contourPtsFromMask(mask_img)
+                contour_pts, mask_pts = self.contour_pts_from_mask(mask_img)
                 draw_mask_kb = 1
                 # print('flags: {}'.format(flags))
             elif event == cv2.EVENT_MOUSEWHEEL:
@@ -935,7 +944,7 @@ class Shape(object):
                 else:
                     # if not delete_mode:
                     _contour_pts = self.getContourPts(mask_pts, shape_patch.shape[:2], show_img=1)
-                    mask_img, blended_img = self.contourPtsToMask(_contour_pts, shape_patch)
+                    mask_img, blended_img = self.contour_pts_to_mask(_contour_pts, shape_patch)
                     start_painting_mode = 1
             elif event == cv2.EVENT_MBUTTONDOWN:
                 print('flags: {}'.format(flags))
@@ -1176,7 +1185,7 @@ class Shape(object):
                 if hed_net is not None:
                     hed_mask = self.runHED(shape_patch, hed_net)
                     if hed_mask is not None:
-                        _, _mask_pts = self.contourPtsFromMask(hed_mask)
+                        _, _mask_pts = self.contour_pts_from_mask(hed_mask)
                         mask_pts = [[x, y, 1] for x, y in _mask_pts]
                         self.mask = [(xmin + x / scale_factor, ymin + y / scale_factor, f)
                                      for (x, y, f) in _mask_pts]
@@ -1197,7 +1206,7 @@ class Shape(object):
                 run_augmentation(use_prev=0)
             elif k == ord('b'):
                 _contour_pts = self.getContourPts(mask_pts, shape_patch.shape[:2], show_img=1)
-                mask_img, blended_img = self.contourPtsToMask(_contour_pts, shape_patch)
+                mask_img, blended_img = self.contour_pts_to_mask(_contour_pts, shape_patch)
                 start_painting_mode = 1
             elif k == ord('q'):
                 discard_changes = 1
@@ -1273,7 +1282,7 @@ class Shape(object):
             mask_pts = [[x, y, 1] for x, y in contour_pts]
         if not discard_changes:
             if paint_mode:
-                contour_pts, mask_pts = self.contourPtsFromMask(mask_img)
+                contour_pts, mask_pts = self.contour_pts_from_mask(mask_img)
             self.mask = [(xmin + x / scale_factor, ymin + y / scale_factor, f)
                          for (x, y, f) in mask_pts]
 

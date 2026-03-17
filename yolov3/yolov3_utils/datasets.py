@@ -351,14 +351,14 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
         img = np.ascontiguousarray(img, dtype=np.float32)  # uint8 to float32
         img /= 255.0  # 0 - 255 to 0.0 - 1.0
 
-        return orig_img, torch.from_numpy(img), labels_out, img_path, (h, w)
+        return index, orig_img, torch.from_numpy(img), labels_out, img_path, (h, w)
 
     @staticmethod
     def collate_fn(batch):
-        orig_img, img, label, path, hw = list(zip(*batch))  # transposed
+        _frame_id, orig_img, img, label, path, hw = list(zip(*batch))  # transposed
         for i, l in enumerate(label):
             l[:, 0] = i  # add target image index for build_targets()
-        return orig_img, torch.stack(img, 0), torch.cat(label, 0), path, hw
+        return _frame_id, orig_img, torch.stack(img, 0), torch.cat(label, 0), path, hw
 
 
 def letterbox(img, new_shape=416, color=(127.5, 127.5, 127.5), mode='auto'):

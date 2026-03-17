@@ -10,14 +10,48 @@ from xml.etree.ElementTree import Element, SubElement
 from lxml import etree
 import codecs
 import numpy as np
-from libs.shape import Shape
 
 XML_EXT = '.xml'
 ENCODE_METHOD = 'utf-8'
 
+
+def contour_pts_from_mask(mask_img):
+    # print('Getting contour pts from mask...')
+    if len(mask_img.shape) == 3:
+        mask_img_gs = np.squeeze(mask_img[:, :, 0]).copy()
+    else:
+        mask_img_gs = mask_img.copy()
+
+    ret = cv2.findContours(mask_img_gs, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)[-2:]
+    _contour_pts, _ = ret
+    if not _contour_pts:
+        return [], []
+    contour_pts = list(np.squeeze(_contour_pts[0]))
+
+    n_contours = len(_contour_pts)
+    # print('n_contours: {}'.format(n_contours))
+    # print('_contour_pts: {}'.format(_contour_pts))
+    # print('contour_pts: {}'.format(type(contour_pts)))
+
+    if n_contours > 1:
+        max_len = len(contour_pts)
+        for _pts in _contour_pts[1:]:
+            # print('_pts: {}'.format(_pts))
+            _pts = np.squeeze(_pts)
+            _len = len(_pts)
+            if max_len < _len:
+                contour_pts = _pts
+                max_len = _len
+
+    # print('contour_pts len: {}'.format(len(contour_pts)))
+    mask_pts = [[x, y, 1] for x, y in contour_pts]
+
+    return contour_pts, mask_pts
+
+
 class PascalVocWriter:
 
-    def __init__(self, foldername, filename, imgSize,databaseSrc='Unknown', localImgPath=None):
+    def __init__(self, foldername, filename, imgSize, databaseSrc='Unknown', localImgPath=None, multiple_ids=False):
         self.foldername = foldername
         self.filename = filename
         self.out_fname = None
@@ -27,6 +61,7 @@ class PascalVocWriter:
         self.imgSize = imgSize
         self.boxlist = []
         self.localImgPath = localImgPath
+        self.multiple_ids = multiple_ids
         self.verified = False
 
     def prettify(self, elem):
@@ -36,9 +71,6 @@ class PascalVocWriter:
         rough_string = ElementTree.tostring(elem, 'utf8')
         root = etree.fromstring(rough_string)
         return etree.tostring(root, pretty_print=True, encoding=ENCODE_METHOD).replace("  ".encode(), "\t".encode())
-        # minidom does not support UTF-8
-        '''reparsed = minidom.parseString(rough_string)
-        return reparsed.toprettyxml(indent="\t", encoding=ENCODE_METHOD)'''
 
     def genXML(self):
         """
@@ -83,7 +115,8 @@ class PascalVocWriter:
         segmented.text = '0'
         return top
 
-    def addBndBox(self, xmin, ymin, xmax, ymax, name, difficult, bbox_source, id_number, score,
+    def addBndBox(self, xmin, ymin, xmax, ymax, name, difficult,
+                  bbox_source, id_number, score,
                   mask, mask_img=None):
         bndbox = {'xmin': xmin, 'ymin': ymin, 'xmax': xmax, 'ymax': ymax}
         bndbox['name'] = name
@@ -102,22 +135,18 @@ class PascalVocWriter:
         for obj_id, each_object in enumerate(self.boxlist):
             object_item = SubElement(top, 'object')
             name = SubElement(object_item, 'name')
-            try:
-                name.text = unicode(each_object['name'])
-            except NameError:
-                # Py3: NameError: name 'unicode' is not defined
-                name.text = each_object['name']
+            name.text = each_object['name']
             pose = SubElement(object_item, 'pose')
             pose.text = "Unspecified"
             truncated = SubElement(object_item, 'truncated')
-            if int(each_object['ymax']) == int(self.imgSize[0]) or (int(each_object['ymin'])== 1):
-                truncated.text = "1" # max == height or min
-            elif (int(each_object['xmax'])==int(self.imgSize[1])) or (int(each_object['xmin'])== 1):
-                truncated.text = "1" # max == width or min
+            if int(each_object['ymax']) == int(self.imgSize[0]) or (int(each_object['ymin']) == 1):
+                truncated.text = "1"  # max == height or min
+            elif (int(each_object['xmax']) == int(self.imgSize[1])) or (int(each_object['xmin']) == 1):
+                truncated.text = "1"  # max == width or min
             else:
                 truncated.text = "0"
             difficult = SubElement(object_item, 'difficult')
-            difficult.text = str( bool(each_object['difficult']) & 1 )
+            difficult.text = str(bool(each_object['difficult']) & 1)
             bndbox = SubElement(object_item, 'bndbox')
             xmin = SubElement(bndbox, 'xmin')
             xmin.text = str(each_object['xmin'])
@@ -130,7 +159,11 @@ class PascalVocWriter:
             bbox_source = SubElement(object_item, 'bbox_source')
             bbox_source.text = str(each_object['bbox_source'])
             id_number = SubElement(object_item, 'id_number')
-            id_number.text = str(each_object['id_number'])
+
+            if self.multiple_ids:
+                id_number.text = ','.join(str(k) for k in each_object['id_number'])
+            else:
+                id_number.text = str(each_object['id_number'])
             score = SubElement(object_item, 'score')
             score.text = str(each_object['score'])
             mask_pts = each_object['mask']
@@ -138,46 +171,58 @@ class PascalVocWriter:
 
             if mask_img is not None:
                 mask_img_name = '{}_{}.png'.format(os.path.splitext(self.filename)[0], obj_id)
-                mask_img_dir = self.foldername if self.out_fname is None else os.path.dirname(self.out_fname)
+                mask_img_dir = self.foldername if self.out_fname is None \
+                    else os.path.dirname(self.out_fname)
                 mask_img_path = os.path.join(mask_img_dir, mask_img_name)
 
                 mask_img_name_elem = SubElement(object_item, 'mask_filename')
                 mask_img_name_elem.text = mask_img_name
 
-                _mask_img = (mask_img*255.0).astype(np.uint8)
+                _mask_img = (mask_img * 255.0).astype(np.uint8)
 
                 cv2.imwrite(mask_img_path, _mask_img)
 
                 # self.mask_images[mask_img_name] = mask_img
                 if mask_pts is None or not mask_pts:
                     _, mask_img_bin = cv2.threshold(mask_img.astype(np.float64), 0.5, 1, cv2.THRESH_BINARY)
-                    _, mask_pts = Shape.contourPtsFromMask(mask_img_bin.astype(np.uint8))
+                    _, mask_pts = contour_pts_from_mask(mask_img_bin.astype(np.uint8))
                     mask_pts = [[x + each_object['xmin'], y + each_object['ymin'], f] for x, y, f in mask_pts]
 
             if mask_pts is not None and mask_pts:
-                mask_txt = '{},{},{};'.format(*mask_pts[0])
-                for _pt in mask_pts[1:]:
-                    mask_txt = '{} {},{},{};'.format(mask_txt, _pt[0], _pt[1], _pt[2])
+                if len(mask_pts[0]) == 3:
+                    mask_txt = '{},{},{};'.format(*mask_pts[0])
+                    for _pt in mask_pts[1:]:
+                        mask_txt = '{} {},{},{};'.format(mask_txt, _pt[0], _pt[1], _pt[2])
+                else:
+                    mask_txt = '{},{},1;'.format(*mask_pts[0])
+                    for _pt in mask_pts[1:]:
+                        mask_txt = '{} {},{},1;'.format(mask_txt, _pt[0], _pt[1])
 
                 mask = SubElement(object_item, 'mask')
                 mask.text = mask_txt
 
-
-    def save(self, targetFile=None, _filename=None, _imgSize=None):
+    def save(self, targetFile=None, _filename=None, _imgSize=None, verbose=True):
 
         if _filename is not None:
-            self.filename =  _filename
+            self.filename = _filename
         if _imgSize is not None:
-            self.imgSize =  _imgSize
+            self.imgSize = _imgSize
 
         if targetFile is None:
             if self.out_fname is None:
                 raise IOError('targetFile must be provided when out_fname is None')
+
             self.out_fname = self.filename + XML_EXT
         else:
             self.out_fname = targetFile
 
+            # self.filename = os.path.basename(self.out_fname)
+            # self.foldername = os.path.dirname(self.out_fname)
+
         root = self.genXML()
+
+        if verbose:
+            print(f'writing xml to: {self.out_fname}')
 
         self.appendObjects(root)
         out_file = codecs.open(self.out_fname, 'w', encoding=ENCODE_METHOD)
@@ -189,7 +234,7 @@ class PascalVocWriter:
 
 class PascalVocReader:
 
-    def __init__(self, filepath):
+    def __init__(self, filepath, multiple_ids=False):
         # shapes type:
         # [labbel, [(x1,y1), (x2,y2), (x3,y3), (x4,y4)], color, color, difficult, bbox_source, id_number]
         self.shapes = []
@@ -201,6 +246,7 @@ class PascalVocReader:
         self.width = None
         self.height = None
         self.depth = None
+        self.multiple_ids = multiple_ids
 
         self.parseXML()
         # try:
@@ -264,7 +310,10 @@ class PascalVocReader:
             if id_number == "None":
                 id_number = None
             else:
-                id_number = int(id_number)
+                if self.multiple_ids:
+                    id_number = tuple([int(x) for x in id_number.split(',')])
+                else:
+                    id_number = int(id_number)
 
             try:
                 mask = object_iter.find('mask').text
@@ -287,4 +336,3 @@ class PascalVocReader:
             self.addShape(label, bndbox, difficult, bbox_source, id_number, score, mask, mask_img)
 
         return True
-

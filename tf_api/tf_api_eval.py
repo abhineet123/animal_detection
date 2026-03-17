@@ -23,6 +23,15 @@ logging.basicConfig(level=logging_level, format=logging_fmt)
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import tensorflow as tf
+try:
+    from tensorflow import ConfigProto, Session
+    from tensorflow.summary import FileWriter
+except ImportError:
+    """tf 2.0"""
+    from tensorflow.compat.v1 import ConfigProto, Session
+    from tensorflow.compat.v1.summary import FileWriter
+
+    tf.compat.v1.disable_eager_execution()
 
 sys.path.append("..")
 
@@ -35,17 +44,17 @@ from mAP.mAP import evaluate
 
 # from core.post_processing import multiclass_non_max_suppression
 
-from utilities import processArguments, sortKey, resizeAR, readGT, readDetections, loadDetections
+from utilities import processArguments, sortKey, resizeAR, read_gt, read_detections, load_detections
 
 
-def getDetections(seq_paths, seq_to_samples, batch_size, sess, tensor_dict,
-                  classes_to_include, category_index, category_index_dict,
-                  save_dir='', load_det=0, save_det=0,
-                  save_video=0, video_file_name='', codec='H264', vid_fps=30, vid_size='1280x720',
-                  csv_file_name='', mask_out_path='', img_ext='jpg', min_score_thresh=0,
-                  combine_sequences=0, input_size='', show_img=0, fullscreen=0, allow_seq_skipping=0,
-                  iou_thresh=0.5, max_boxes_per_class=10, bgr_to_rgb=1, eval_every=0, start_seq_id=0,
-                  class_agnostic=0):
+def get_detections(seq_paths, seq_to_samples, batch_size, sess, tensor_dict,
+                   classes_to_include, category_index, category_index_dict,
+                   save_dir='', load_det=0, save_det=0,
+                   save_video=0, video_file_name='', codec='H264', vid_fps=30, vid_size='1280x720',
+                   csv_file_name='', mask_out_path='', img_ext='jpg', min_score_thresh=0.,
+                   combine_sequences=0, input_size='', show_img=0, fullscreen=0, allow_seq_skipping=0,
+                   iou_thresh=0.5, max_boxes_per_class=10, bgr_to_rgb=1, eval_every=0, start_seq_id=0,
+                   class_agnostic=0, background_path=''):
     if tensor_dict is not None:
         image_tensor = tensor_dict['image_tensor']
         if 'detection_masks' in tensor_dict:
@@ -125,7 +134,7 @@ def getDetections(seq_paths, seq_to_samples, batch_size, sess, tensor_dict,
         print('Loading csv detections using {} threads'.format(n_cpus))
         _start_t = time.time()
         raw_det_data_list = pool.map(functools.partial(
-            loadDetections,
+            load_detections,
             seq_to_samples=seq_to_samples,
             seq_paths=seq_paths,
             save_dir=save_dir,
@@ -142,6 +151,7 @@ def getDetections(seq_paths, seq_to_samples, batch_size, sess, tensor_dict,
         raw_det_data_dict = {seq_paths[i]: raw_det_data_list[i][0] for i in range(n_seq)}
 
     fps_list = []
+    mot_out_fid = None
     for seq_idx in range(start_seq_id, n_seq):
         seq_path = seq_paths[seq_idx]
 
@@ -149,6 +159,16 @@ def getDetections(seq_paths, seq_to_samples, batch_size, sess, tensor_dict,
         n_frames = len(src_file_list)
 
         seq_name = os.path.splitext(os.path.basename(seq_path))[0]
+        seq_background_img = None
+
+        if background_path:
+            seq_background_path = os.path.join(background_path, seq_name + '.jpg')
+            if not os.path.isfile(seq_background_path):
+                raise IOError('background file does not exist: {}'.format(seq_background_path))
+            seq_background_img = cv2.imread(seq_background_path)
+            if bgr_to_rgb:
+                seq_background_img = cv2.cvtColor(seq_background_img, cv2.COLOR_BGR2RGB)
+
 
         if not load_det:
             print('sequence {}/{}: {}: '.format(seq_idx + 1, n_seq, seq_name))
@@ -224,6 +244,9 @@ def getDetections(seq_paths, seq_to_samples, batch_size, sess, tensor_dict,
             if not os.path.isdir(csv_save_dir):
                 os.makedirs(csv_save_dir)
             print('Saving csv detections to {}'.format(csv_file_name))
+            mot_path = csv_file_name.replace('.csv', '.txt')
+            mot_out_fid = open(mot_path, 'w')
+            print('Saving MOT detections to {}'.format(mot_path))
 
         if not bgr_to_rgb:
             print('\n\nbgr_to_rgb is disabled\n\n')
@@ -233,6 +256,7 @@ def getDetections(seq_paths, seq_to_samples, batch_size, sess, tensor_dict,
         frame_id = 0
         csv_raw = []
         exit_seq = 0
+
 
         bounding_boxes = []
 
@@ -264,6 +288,11 @@ def getDetections(seq_paths, seq_to_samples, batch_size, sess, tensor_dict,
 
                 if bgr_to_rgb:
                     image_np = cv2.cvtColor(image_np, cv2.COLOR_BGR2RGB)
+
+                if seq_background_img is not None:
+                    image_list = [image_np, seq_background_img]
+                    image_np = np.concatenate(image_list, axis=-1)
+
                 images.append(image_np)
                 file_paths.append(file_path)
                 frame_id += 1
@@ -358,6 +387,7 @@ def getDetections(seq_paths, seq_to_samples, batch_size, sess, tensor_dict,
                         #     # Follow the convention by adding back the batch dimension
                         #     tensor_dict['detection_masks'] = tf.expand_dims(
                         #         detection_masks_reframed, 0)
+
                         _image = np.expand_dims(image, axis=0)
 
                         # print('Running on image of size {}x{} : {}'.format(img_h, img_w, file_names[idx]))
@@ -568,8 +598,8 @@ def getDetections(seq_paths, seq_to_samples, batch_size, sess, tensor_dict,
                     if _box is None:
                         continue
 
-                    # if _score <= min_score_thresh:
-                    #     continue
+                    if _score <= min_score_thresh:
+                        continue
 
                     if enable_masks:
                         _mask = curr_masks[_id]
@@ -622,8 +652,8 @@ def getDetections(seq_paths, seq_to_samples, batch_size, sess, tensor_dict,
                     try:
                         label = category_index[_class]['name']
                     except KeyError:
-                        print('category_index: {}'.format(pformat(category_index)))
-                        print('Ignoring box with unknown class: {}'.format(_class))
+                        # print('category_index: {}'.format(pformat(category_index)))
+                        # print('Ignoring box with unknown class: {}'.format(_class))
                         continue
 
                     ymin, xmin, ymax, xmax = _box
@@ -664,6 +694,16 @@ def getDetections(seq_paths, seq_to_samples, batch_size, sess, tensor_dict,
                         }
                         csv_raw.append(raw_data)
 
+                        w, h = xmax - xmin, ymax - ymin
+
+                        try:
+                            _frame_id = src_file_list.index(file_path)
+                        except:
+                            raise IOError('Invalid file_path found: {}'.format(file_path))
+
+                        mot_out_fid.write('{:d},{:d},{:f},{:f},{:f},{:f},{:f},-1,-1,-1\n'.format(
+                            _frame_id + 1, -1, xmin, ymin, w, h, _score))
+
                 if show_img:
                     # if not boxes_drawn:
                     #     vis_util.visualize_boxes_and_labels_on_image_array(
@@ -702,7 +742,7 @@ def getDetections(seq_paths, seq_to_samples, batch_size, sess, tensor_dict,
             overall_end_t = time.time()
             overall_fps = float(curr_batch_size) / float(overall_end_t - overall_start_t)
             sys.stdout.write(
-                '\rDone {:d}/{:d} frames fps: {:.4f} ({:.4f}) avg_fps: {:.4f} ({:.4f}) n_objs: {:d},{:d}'.format(
+                '\rDone {:6d}/{:6d} frames fps: {:.4f} ({:.4f}) avg_fps: {:.4f} ({:.4f}) n_objs: {:4d},{:4d}'.format(
                     frame_id, n_frames, fps, overall_fps, avg_fps, combined_avg_fps, n_raw_objs, n_objs))
             sys.stdout.flush()
 
@@ -742,6 +782,7 @@ def getDetections(seq_paths, seq_to_samples, batch_size, sess, tensor_dict,
             df = pd.DataFrame(csv_raw)
             out_file_path = os.path.join(csv_file_name)
             df.to_csv(out_file_path)
+            mot_out_fid.close()
 
         print('combined_avg_fps: {}'.format(combined_avg_fps))
         mask_out_path = csv_file_name = ''
@@ -844,6 +885,7 @@ def main():
 
         'combine_sequences': 0,
         'input_size': '',
+        'min_score_thresh': -1.,
         'score_thresholds': [0, ],
         'rec_ratios': [],
         # 'rec_ratios': list(np.arange(1.0,4.1,0.1)),
@@ -856,9 +898,19 @@ def main():
         'bgr_to_rgb': 1,
 
         'class_agnostic': 0,
+
+        'start_id': -1,
+        'end_id': -1,
+
+        'gpu': '',
+        'background_path': '',
     }
 
     processArguments(sys.argv[1:], params)
+
+    gpu = params['gpu']
+    if gpu:
+        os.environ["CUDA_VISIBLE_DEVICES"] = gpu
 
     seq_paths = params['seq_paths']
     root_dir = params['root_dir']
@@ -941,6 +993,7 @@ def main():
 
     combine_sequences = params['combine_sequences']
     input_size = params['input_size']
+    min_score_thresh = params['min_score_thresh']
     score_thresholds = params['score_thresholds']
     rec_ratios = params['rec_ratios']
 
@@ -956,11 +1009,18 @@ def main():
 
     class_agnostic = params['class_agnostic']
 
+    start_id = params['start_id']
+    end_id = params['end_id']
+
+    background_path = params['background_path']
+
+
     next_exported_iters = eval_every
     prev_ckpt_iters = -1
 
     n_score_thresholds = len(score_thresholds)
-    min_score_thresh = score_thresholds[0]
+    if min_score_thresh < 0:
+        min_score_thresh = score_thresholds[0]
 
     # if n_score_thresholds > 1:
     #     print('score_thresholds: {}'.format(score_thresholds))
@@ -986,7 +1046,7 @@ def main():
 
     ckpt_path, labels_path, n_classes, ckpt_label = model_list[model_id]
     if not load_det:
-        if not os.path.exists(ckpt_path):
+        if not os.path.exists(ckpt_path) and not frozen_graph_path:
             raise IOError('Checkpoint file: {} does not exist'.format(ckpt_path))
 
     label_map = label_map_util.load_labelmap(labels_path)
@@ -1046,12 +1106,25 @@ def main():
 
     seq_paths.sort(key=sortKey)
 
+
     # if start_seq_id > 0:
     #     seq_paths = seq_paths[start_seq_id:]
 
     # print('seq_paths: ', seq_paths)
     n_seq = len(seq_paths)
     # print('Running over {} sequence(s)'.format(n_seq))
+
+    if start_id < 0:
+        start_id = 0
+    if end_id < start_id:
+        end_id = n_seq - 1
+
+    assert end_id >= start_id, "end_id: {} is < start_id: {}".format(end_id, start_id)
+
+    if start_id > 0 or end_id < n_seq - 1:
+        print('curtailing sequences to between IDs {} and {}'.format(start_id, end_id))
+        seq_paths = seq_paths[start_id:end_id + 1]
+        n_seq = len(seq_paths)
 
     gt_paths = [os.path.join(k, 'annotations.csv') for k in seq_paths]
     gt_paths = [gt_path.replace('\\', '/') for gt_path in gt_paths]
@@ -1098,7 +1171,7 @@ def main():
 
     assert sampling_ratio <= 1.0 and sampling_ratio >= 0.0, 'sampling_ratio must be between 0 and 1'
 
-    session_config = tf.ConfigProto(allow_soft_placement=True,
+    session_config = ConfigProto(allow_soft_placement=True,
                                     log_device_placement=False)
     session_config.gpu_options.allow_growth = allow_memory_growth
     session_config.gpu_options.per_process_gpu_memory_fraction = gpu_memory_fraction
@@ -1189,11 +1262,11 @@ def main():
                 _f = os.path.join(_f, 'seq_to_samples.txt')
             with open(_f, 'r') as fid:
                 curr_seq_to_samples = ast.literal_eval(fid.read())
-                for _seq in curr_seq_to_samples:
-                    if _seq in seq_to_samples:
-                        seq_to_samples[_seq] += curr_seq_to_samples[_seq]
-                    else:
-                        seq_to_samples[_seq] = curr_seq_to_samples[_seq]
+            for _seq in curr_seq_to_samples:
+                if _seq in seq_to_samples:
+                    seq_to_samples[_seq] += curr_seq_to_samples[_seq]
+                else:
+                    seq_to_samples[_seq] = curr_seq_to_samples[_seq]
 
     class_to_n_samples = {_class: 0 for _class in class_names}
 
@@ -1338,7 +1411,7 @@ def main():
     # summary_dict = {}
     # vars = []
     # with detection_graph.as_default():
-    #     with tf.Session(graph=detection_graph, config=session_config) as sess:
+    #     with Session(graph=detection_graph, config=session_config) as sess:
     #         for _class in summary_classes:
     #             summary_dict[_class] = {}
     #             for _type in summary_types:
@@ -1354,7 +1427,7 @@ def main():
     # init = tf.global_variables_initializer()
     # sess.run(init)
 
-    summary_writer = tf.summary.FileWriter(eval_dir)
+    summary_writer = FileWriter(eval_dir)
 
     if frozen_graph_path and not os.path.isfile(frozen_graph_path):
         print('Frozen inference graph does not exist: {}'.format(frozen_graph_path))
@@ -1442,7 +1515,7 @@ def main():
             print('Using class agnostic mode')
             summary_out_fname = '{}_ca'.format(summary_out_fname)
 
-        summary_out_path = os.path.join(eval_dir, summary_out_fname + '.txt')
+        summary_out_path = os.path.join(eval_dir, summary_out_fname)
         # combined_summary_out_path = os.path.join(eval_dir, summary_out_fname + '_combined.txt')
 
         vis_out_path = os.path.join(eval_dir, summary_out_fname + '.{}'.format(vid_ext))
@@ -1477,7 +1550,7 @@ def main():
             pprint(all_sampled_files, fid)
 
         with detection_graph.as_default():
-            with tf.Session(graph=detection_graph, config=session_config) as sess:
+            with Session(graph=detection_graph, config=session_config) as sess:
                 if not load_det:
                     print('\nLoading inference graph from: {}'.format(frozen_graph_path))
 
@@ -1540,35 +1613,36 @@ def main():
                 else:
                     _seq_paths = seq_paths
                     _seq_to_samples = seq_to_samples
-                raw_det_data_dict = getDetections(_seq_paths, _seq_to_samples, batch_size, sess,
-                                                  tensor_dict,
-                                                  classes_to_include, category_index, category_index_dict,
-                                                  load_det=load_det,
-                                                  save_det=save_det,
-                                                  save_dir=save_dir,
-                                                  save_video=save_video,
-                                                  vid_size=vid_size,
-                                                  combine_sequences=combine_sequences,
-                                                  input_size=input_size,
-                                                  show_img=show_img,
-                                                  fullscreen=fullscreen,
-                                                  min_score_thresh=min_score_thresh,
-                                                  # enable_nms=enable_nms,
-                                                  iou_thresh=iou_thresh,
-                                                  max_boxes_per_class=max_boxes_per_class,
-                                                  allow_seq_skipping=allow_seq_skipping,
-                                                  bgr_to_rgb=bgr_to_rgb,
-                                                  eval_every=eval_every,
-                                                  start_seq_id=start_seq_id,
-                                                  class_agnostic=class_agnostic,
-                                                  )
+                raw_det_data_dict = get_detections(_seq_paths, _seq_to_samples, batch_size, sess,
+                                                   tensor_dict,
+                                                   classes_to_include, category_index, category_index_dict,
+                                                   load_det=load_det,
+                                                   save_det=save_det,
+                                                   save_dir=save_dir,
+                                                   save_video=save_video,
+                                                   vid_size=vid_size,
+                                                   combine_sequences=combine_sequences,
+                                                   input_size=input_size,
+                                                   show_img=show_img,
+                                                   fullscreen=fullscreen,
+                                                   min_score_thresh=min_score_thresh,
+                                                   # enable_nms=enable_nms,
+                                                   iou_thresh=iou_thresh,
+                                                   max_boxes_per_class=max_boxes_per_class,
+                                                   allow_seq_skipping=allow_seq_skipping,
+                                                   bgr_to_rgb=bgr_to_rgb,
+                                                   eval_every=eval_every,
+                                                   start_seq_id=start_seq_id,
+                                                   class_agnostic=class_agnostic,
+                                                   background_path=background_path,
+                                                   )
 
         if eval_every < 0:
             break
 
         if not gt_data_dict:
-            gt_data_dict = readGT(gt_paths, seq_paths, seq_to_samples,
-                                  class_names, combine_sequences, class_agnostic)
+            gt_data_dict = read_gt(gt_paths, seq_paths, seq_to_samples,
+                                   class_names, combine_sequences, class_agnostic)
 
         # scores_to_ap = {}
         # scores_to_recall = {}
@@ -1584,28 +1658,28 @@ def main():
 
         # for score_idx, score_thresh in enumerate((score_thresholds[0], )):
         #     print('Evaluating for score_threshold: {}'.format(score_thresh))
-        eval_result_dict, eval_text = evaluate(_seq_paths, _class_names,
-                                               _gt_data_dict=gt_data_dict,
-                                               raw_det_data_dict=raw_det_data_dict,
-                                               save_dir=eval_dir,
-                                               write_summary=write_summary,
-                                               out_fname=summary_out_path,
-                                               vis_out_fname=vis_out_path,
-                                               # eval_result_dict=eval_result_dict,
-                                               save_animation=save_animation,
-                                               show_text=show_text,
-                                               show_stats=show_stats,
-                                               show_gt=show_gt,
-                                               show_only_tp=show_only_tp,
-                                               show_animation=show_animation,
-                                               save_file_res=save_file_res,
-                                               draw_plot=draw_plot,
-                                               results_path=results_path,
-                                               score_thresholds=score_thresholds,
-                                               rec_ratios=rec_ratios,
-                                               wt_avg=wt_avg_map,
-                                               n_threads=n_threads,
-                                               )
+        eval_result_dict = evaluate(_seq_paths, _class_names,
+                                    _gt_data_dict=gt_data_dict,
+                                    raw_det_data_dict=raw_det_data_dict,
+                                    save_dir=eval_dir,
+                                    write_summary=write_summary,
+                                    out_root_dir=summary_out_path,
+                                    vis_out_fname=vis_out_path,
+                                    # eval_result_dict=eval_result_dict,
+                                    save_animation=save_animation,
+                                    show_text=show_text,
+                                    show_stats=show_stats,
+                                    show_gt=show_gt,
+                                    show_only_tp=show_only_tp,
+                                    show_animation=show_animation,
+                                    save_file_res=save_file_res,
+                                    draw_plot=draw_plot,
+                                    results_path=results_path,
+                                    score_thresholds=score_thresholds,
+                                    rec_ratios=rec_ratios,
+                                    wt_avg=wt_avg_map,
+                                    n_threads=n_threads,
+                                    )
         # scores_to_eval[score_thresh] = eval_result_dict
         # out_text += '{}\n{}\n'.format(score_thresh, eval_text)
 
@@ -1666,7 +1740,7 @@ def main():
                     )
 
             with detection_graph.as_default():
-                with tf.Session(graph=detection_graph, config=session_config) as sess:
+                with Session(graph=detection_graph, config=session_config) as sess:
                     # result = []
                     # tf.initialize_all_variables().run(session=sess)
                     # init = tf.variables_initializer(vars)

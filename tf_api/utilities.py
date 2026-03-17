@@ -17,32 +17,6 @@ list_float_comma = lambda _str: str_to_list(_str, float, ',')
 list_str_comma = lambda _str: str_to_list(_str, str, ',')
 
 
-def computeThreshRecPrec(thresh_idx, score_thresholds, gt_counter_per_class,
-                         conf_class, fp_class, tp_class, gt_class):
-    _thresh = score_thresholds[thresh_idx]
-    idx_thresh = [i for i, x in enumerate(conf_class) if x >= _thresh]
-
-    # conf_class_thresh = [conf_class[i] for i in idx_thresh]
-    fp_thresh = [fp_class[i] for i in idx_thresh]
-    tp_thresh = [tp_class[i] for i in idx_thresh]
-
-    tp_sum_thresh = np.sum(tp_thresh)
-    fp_sum_thresh = np.sum(fp_thresh)
-
-    if tp_sum_thresh > 0:
-        _rec_thresh = float(tp_sum_thresh) / gt_counter_per_class[gt_class]
-    else:
-        _rec_thresh = 0
-    try:
-        _prec_thresh = float(tp_sum_thresh) / float(fp_sum_thresh + tp_sum_thresh)
-    except ZeroDivisionError:
-        _prec_thresh = 0
-
-    # sys.stdout.write('\rDone {}/{}: {}'.format(thresh_idx+1, n_score_thresholds, _thresh))
-    # sys.stdout.flush()
-
-    return _rec_thresh, _prec_thresh
-
 def sortKey(fname):
     fname = os.path.splitext(os.path.basename(fname))[0]
     # print('fname: ', fname)
@@ -85,6 +59,21 @@ def sortKey(fname):
 
     # print('fname: {}, key: {}'.format(fname, key))
     return key
+
+
+def add_suffix(src_path, suffix, dst_ext=''):
+    # abs_src_path = os.path.abspath(src_path)
+    src_dir = os.path.dirname(src_path)
+    src_name, src_ext = os.path.splitext(os.path.basename(src_path))
+    if not dst_ext:
+        dst_ext = src_ext
+
+    dst_path = linux_path(src_dir, src_name + '_' + suffix + dst_ext)
+    return dst_path
+
+
+def linux_path(*args, **kwargs):
+    return os.path.join(*args, **kwargs).replace(os.sep, '/')
 
 
 def processArguments(args, params):
@@ -147,14 +136,35 @@ def processArguments(args, params):
             params[arg[0]] = type(params[arg[0]])(_val_parsed)
 
 
-def resizeAR(src_img, width, height, return_factors=False, add_border=True):
+def resizeAR(src_img, width=0, height=0, return_factors=0, add_border=1, crop=0):
     src_height, src_width, n_channels = src_img.shape
+
     src_aspect_ratio = float(src_width) / float(src_height)
 
-    if width == 0 or height == 0:
-        raise SystemError('Neither width nor height can be zero')
+    if width <= 0 and height <= 0:
+        raise AssertionError(
+            'Both width and height cannot be 0 when resize_factor is 0 too')
+    elif height <= 0:
+        height = int(width / src_aspect_ratio)
+    elif width <= 0:
+        width = int(height * src_aspect_ratio)
 
     aspect_ratio = float(width) / float(height)
+
+    if add_border == 2:
+        assert src_height <= height and src_width <= width, \
+            f"border only mode :: source size {src_width} x {src_height} > target size {width} x {height}"
+
+        dst_img = np.zeros((height, width, n_channels), dtype=np.uint8)
+        start_row = int((height - src_height) / 2.0)
+        start_col = int((width - src_width) / 2.0)
+        end_row = start_row + src_height
+        end_col = start_col + src_width
+        dst_img[start_row:end_row, start_col:end_col, :] = src_img
+        if return_factors:
+            return dst_img, 1, start_row, start_col
+        else:
+            return dst_img
 
     if add_border:
         if src_aspect_ratio == aspect_ratio:
@@ -172,11 +182,24 @@ def resizeAR(src_img, width, height, return_factors=False, add_border=True):
             start_col = int((dst_width - src_width) / 2.0)
             start_row = 0
 
+        end_row = start_row + src_height
+        end_col = start_col + src_width
         dst_img = np.zeros((dst_height, dst_width, n_channels), dtype=np.uint8)
-        dst_img[start_row:start_row + src_height, start_col:start_col + src_width, :] = src_img
+        dst_img[start_row:end_row, start_col:end_col, :] = src_img
         dst_img = cv2.resize(dst_img, (width, height))
+
+        resize_factor = float(height) / float(dst_height)
+
+        if crop:
+            start_col_res = int(start_col * resize_factor)
+            start_row_res = int(start_row * resize_factor)
+            end_row_res = int(end_row * resize_factor)
+            end_col_res = int(end_col * resize_factor)
+            dst_img = dst_img[start_row_res:end_row_res, start_col_res:end_col_res, :]
+
+            start_col = start_row = 0
+
         if return_factors:
-            resize_factor = float(height) / float(dst_height)
             return dst_img, resize_factor, start_row, start_col
         else:
             return dst_img
@@ -196,13 +219,76 @@ def resizeAR(src_img, width, height, return_factors=False, add_border=True):
             return dst_img
 
 
-def drawBox(image, xmin, ymin, xmax, ymax, box_color=(0, 255, 0), label=None):
+def clamp(_vals, min_val, max_val):
+    return [max(min(_val, max_val), min_val) for _val in _vals]
+
+
+def put_text_with_background(img, text, loc, col, bgr_col, **kwargs):
+    # font_types = {
+    #     0: cv2.FONT_HERSHEY_COMPLEX_SMALL,
+    #     1: cv2.FONT_HERSHEY_COMPLEX,
+    #     2: cv2.FONT_HERSHEY_DUPLEX,
+    #     3: cv2.FONT_HERSHEY_PLAIN,
+    #     4: cv2.FONT_HERSHEY_SCRIPT_COMPLEX,
+    #     5: cv2.FONT_HERSHEY_SCRIPT_SIMPLEX,
+    #     6: cv2.FONT_HERSHEY_SIMPLEX,
+    #     7: cv2.FONT_HERSHEY_TRIPLEX,
+    #     8: cv2.FONT_ITALIC,
+    # }
+
+    # print('font_id: {}'.format(font_id))
+    # print('loc: {}'.format(loc))
+    # print('size: {}'.format(size))
+    # print('thickness: {}'.format(thickness))
+    # print('col: {}'.format(col))
+    # print('bgr_col: {}'.format(bgr_col))
+    # print('disable_bkg: {}'.format(disable_bkg))
+
+    text_offset_x, text_offset_y = loc
+
+    (text_width, text_height) = cv2.getTextSize(text, **kwargs)[0]
+    box_coords = ((text_offset_x, text_offset_y + 5), (text_offset_x + text_width, text_offset_y - text_height))
+    cv2.rectangle(img, box_coords[0], box_coords[1], bgr_col, cv2.FILLED)
+
+    cv2.putText(img, text, org=loc, color=col, **kwargs)
+
+    return text_width, text_height
+
+
+def show_labels(image, labels, cols, vert=1, offset=5):
+    x, y = 5, 15
+
+    font_args = dict(
+        fontFace=cv2.FONT_HERSHEY_COMPLEX_SMALL,
+        fontScale=1,
+        thickness=1
+    )
+    for label, col in zip(labels, cols):
+        txt = f'{label}'
+
+        (_text_width, _text_height) = put_text_with_background(image, txt, (x, y), col, (0, 0, 0), **font_args)
+
+        if vert:
+            y += _text_height + offset
+        else:
+            x += _text_width + offset
+
+
+def drawBox(image, xmin, ymin, xmax, ymax, box_color=(0, 255, 0), label=None, font_size=0.3, mask=None):
     # if cv2.__version__.startswith('3'):
     #     font_line_type = cv2.LINE_AA
     # else:
     #     font_line_type = cv2.CV_AA
 
-    cv2.rectangle(image, (xmin, ymin), (xmax, ymax), box_color)
+    image_float = image.astype(np.float32)
+
+    if mask is not None:
+        mask_pts = np.asarray(mask).reshape((-1, 1, 2)).astype(np.int32)
+        cv2.drawContours(image_float, mask_pts, -1, box_color, thickness=2, lineType=cv2.LINE_AA)
+    else:
+        cv2.rectangle(image_float, (int(xmin), int(ymin)), (int(xmax), int(ymax)), box_color)
+
+    image[:] = image_float.astype(image.dtype)
 
     _bb = [xmin, ymin, xmax, ymax]
     if _bb[1] > 10:
@@ -211,7 +297,8 @@ def drawBox(image, xmin, ymin, xmax, ymax, box_color=(0, 255, 0), label=None):
         y_loc = int(_bb[3] + 5)
     if label is not None:
         cv2.putText(image, label, (int(_bb[0] - 1), y_loc), cv2.FONT_HERSHEY_SIMPLEX,
-                    0.3, box_color, 1, cv2.LINE_AA)
+                    font_size, box_color, 1, cv2.LINE_AA)
+
 
 def isEmpty(src_dir):
     src_file_gen = [[os.path.join(dirpath, f) for f in filenames]
@@ -220,6 +307,7 @@ def isEmpty(src_dir):
     if not src_files:
         return True
     return False
+
 
 def removeEmptyFolders(path, removeRoot=True):
     'Function to remove empty folders'
@@ -268,14 +356,14 @@ def fix_bbox(bbox, fixed_ar, border, img_shape):
 
 
 def map_mask_to_bbox(bbox, mask_patch, fixed_ar=0, border=0,
-                     img_shape=None, mask_img=None):
+                     img_shape=None, mask_img=None, full_mask_img=None):
     if mask_img is None:
         mask_img = np.zeros(img_shape, dtype=np.uint8)
 
-    xmin, ymin, xmax, ymax = bbox
-    box_w, box_h = xmax - xmin, ymax - ymin
+    # xmin, ymin, xmax, ymax = bbox
+    # box_w, box_h = xmax - xmin, ymax - ymin
 
-    mask_h, mask_w = mask_patch.shape[:2]
+    # mask_h, mask_w = mask_patch.shape[:2]
 
     # print('dimensions of orig box: {} and mask: {}'.format(
     #     [box_h, box_w], [mask_h, mask_w]
@@ -307,6 +395,17 @@ def map_mask_to_bbox(bbox, mask_patch, fixed_ar=0, border=0,
 
     try:
         mask_img[ymin:ymax, xmin:xmax, :] = mask_patch
+
+        if full_mask_img is not None:
+            """only modify pixels where the current object's mask is non zero to avoid 
+            overwriting other objects with overlapping bounding boxes"""
+            temp_mask_img = np.zeros_like(full_mask_img)
+            temp_mask_img[ymin:ymax, xmin:xmax, :] = mask_patch
+            mask_img_gs = cv2.cvtColor(temp_mask_img, cv2.COLOR_BGR2GRAY)
+            mask_img_binary = mask_img_gs > 0
+
+            full_mask_img[mask_img_binary] = temp_mask_img[mask_img_binary]
+
     except ValueError as e:
         print('bbox: {}'.format(bbox))
         print('Weird mismatch between dimensions of box: {} and mask: {}'.format(
@@ -542,7 +641,8 @@ def getIOU(boxA, boxB):
     # return the intersection over union value
     return iou
 
-def readGT(gt_paths, seq_paths, seq_to_samples, class_names, combine_sequences, class_agnostic):
+
+def read_gt(gt_paths, seq_paths, seq_to_samples, class_names, combine_sequences, class_agnostic):
     print('Reading GT...')
     gt_data_dict = {}
     gt_counter_per_class = {}
@@ -600,6 +700,12 @@ def readGT(gt_paths, seq_paths, seq_to_samples, class_names, combine_sequences, 
             xmax = float(row['xmax'])
             ymax = float(row['ymax'])
             class_name = row['class']
+            width = int(row['width'])
+            height = int(row['height'])
+            try:
+                target_id = int(row['target_id'])
+            except:
+                target_id = -1
 
             if class_name not in class_names:
                 # print('{} : {} :: Skipping unknown class: {}'.format(gt_path, filename, class_name))
@@ -620,8 +726,12 @@ def readGT(gt_paths, seq_paths, seq_to_samples, class_names, combine_sequences, 
 
             _gt_obj = {
                 "file_path": file_path,
-                "class_name": _class_name,
+                "class": _class_name,
                 "bbox": bbox,
+                'width': width,
+                'height': height,
+                'target_id': target_id,
+                'filename': filename,
                 "used": False,
                 "matched": False
             }
@@ -657,7 +767,7 @@ def readGT(gt_paths, seq_paths, seq_to_samples, class_names, combine_sequences, 
     return gt_data_dict
 
 
-def readDetections(seq_path, csv_path, src_file_list, allow_seq_skipping, class_agnostic):
+def read_detections(seq_path, csv_path, src_file_list, allow_seq_skipping, class_agnostic):
     # print('Reading Detections...')
 
     # if threshold > 0:
@@ -705,15 +815,26 @@ def readDetections(seq_path, csv_path, src_file_list, allow_seq_skipping, class_
             xmax = float(row['xmax'])
             ymax = float(row['ymax'])
             class_name = row['class']
+            img_width = row["width"]
+            img_height = row["height"]
+            try:
+                target_id = int(row['target_id'])
+            except:
+                target_id = -1
 
             if class_agnostic:
                 class_name = 'generic'
 
             bounding_boxes.append(
-                {"class": class_name,
-                 "confidence": confidence,
-                 "file_path": file_path,
-                 "bbox": [xmin, ymin, xmax, ymax]}
+                {
+                    "class": class_name,
+                    "confidence": confidence,
+                    "file_path": file_path,
+                    'filename': filename,
+                    'width': img_width,
+                    'height': img_height,
+                    'target_id': target_id,
+                    "bbox": [xmin, ymin, xmax, ymax]}
             )
 
         # _end_t = time.time()
@@ -734,9 +855,9 @@ def readDetections(seq_path, csv_path, src_file_list, allow_seq_skipping, class_
     return bounding_boxes
 
 
-def loadDetections(seq_idx, seq_to_samples, seq_paths, save_dir,
-                   combine_sequences, csv_file_name, n_seq,
-                   allow_seq_skipping, class_agnostic):
+def load_detections(seq_idx, seq_to_samples, seq_paths, save_dir,
+                    combine_sequences, csv_file_name, n_seq,
+                    allow_seq_skipping, class_agnostic):
     src_file_list = seq_to_samples[seq_idx]
 
     if not src_file_list:
@@ -761,14 +882,14 @@ def loadDetections(seq_idx, seq_to_samples, seq_paths, save_dir,
             _csv_file_name = os.path.join(save_dir, '{}.csv'.format(_seq_name))
             print('Loading csv detections from {}'.format(_csv_file_name))
             _start_t = time.time()
-            raw_det_data_dict += readDetections(_seq_path, _csv_file_name, _src_file_list,
-                                                allow_seq_skipping, class_agnostic)
+            raw_det_data_dict += read_detections(_seq_path, _csv_file_name, _src_file_list,
+                                                 allow_seq_skipping, class_agnostic)
         # _end_t = time.time()
     else:
         print('Loading csv detections from {}'.format(csv_file_name))
         # _start_t = time.time()
-        raw_det_data_dict = readDetections(seq_path, csv_file_name, src_file_list,
-                                           allow_seq_skipping, class_agnostic)
+        raw_det_data_dict = read_detections(seq_path, csv_file_name, src_file_list,
+                                            allow_seq_skipping, class_agnostic)
         # _end_t = time.time()
     # try:
     #     fps = float(n_frames) / float(_end_t - _start_t)

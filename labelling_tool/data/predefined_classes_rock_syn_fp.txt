@@ -1,0 +1,5 @@
+rock	green
+syn	red
+FP-rock	forest_green
+FP-syn	maroon
+

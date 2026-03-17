@@ -154,8 +154,8 @@ def generateAugmentedSequence(src_files, src_data_dict, bkg_files, bkg_data_dict
             mask = mask_file
 
         if apply_mask_contour:
-            _pts, _ = Shape.contourPtsFromMask(mask)
-            mask, _ = Shape.contourPtsToMask(_pts, mask)
+            _pts, _ = Shape.contour_pts_from_mask(mask)
+            mask, _ = Shape.contour_pts_to_mask(_pts, mask)
 
         if visualize:
             if map_to_bbox:
@@ -688,7 +688,7 @@ def generateAugmentedSequence(src_files, src_data_dict, bkg_files, bkg_data_dict
                     sys.stdout.flush()
 
                 if save_seq:
-                    _, mask_pts = Shape.contourPtsFromMask(dst_patch_mask.astype(np.uint8))
+                    _, mask_pts = Shape.contour_pts_from_mask(dst_patch_mask.astype(np.uint8))
                     mask_pts = [[x + dst_xmin, y + dst_ymin, f] for x, y, f in mask_pts]
                     xml_writer.addBndBox(dst_xmin, dst_ymin, dst_xmax, dst_ymax,
                                          class_name, 0, 'ground_truth', target_id, 1, mask_pts)

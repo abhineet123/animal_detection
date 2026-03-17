@@ -1,0 +1,6 @@
+N:\Datasets\Acamp\acamp10k\train\human_biwi_sunny_day-img-left
+N:\Datasets\Acamp\acamp10k\train\human_biwi_lp-left
+N:\Datasets\Acamp\acamp10k\train\human_biwi_seq01-img-left
+N:\Datasets\Acamp\acamp10k\train\human_biwi_seq02-img-left
+N:\Datasets\Acamp\acamp10k\train\human_biwi_seq03-img-left
+N:\Datasets\Acamp\acamp10k\train\human_biwi_seq04-img-left

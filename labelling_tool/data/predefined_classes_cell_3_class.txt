@@ -1,0 +1,3 @@
+cell
+good_cell
+bad_cell

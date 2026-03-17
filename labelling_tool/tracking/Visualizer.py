@@ -284,9 +284,6 @@ class Visualizer:
         if label:
             img_text = '{} {}'.format(label, img_text) if img_text else label
 
-        if img_text:
-            # self._logger.info('img_text: {}'.format(img_text))
-            self._text.put(curr_frame_disp, img_text)
         # annotations
         ann_frame = np.copy(curr_frame_disp)
         ann_data = frame_data
@@ -304,10 +301,13 @@ class Visualizer:
                 self.traj_data[2][target_id].append(traj_point)
                 utils.drawTrajectory(ann_frame, self.traj_data[2][target_id], color=self._params.ann_cols[col_id],
                                      thickness=self._params.traj_thickness)
+            # label = '{} {}'.format(self._class_labels[ann_data[ann_id, 6]], target_id)
+            label = self._class_labels[ann_data[ann_id, 6]]
             kw_args = {
                 'color': self._params.ann_cols[col_id],
-                '_id': target_id, 'thickness': self._params.box_thickness,
-                'label': self._class_labels[ann_data[ann_id, 6]]
+                '_id': target_id,
+                'thickness': self._params.box_thickness,
+                'label': label
             }
             if masks:
                 kw_args['mask'] = masks[ann_id]
@@ -333,8 +333,6 @@ class Visualizer:
 
             print('ann_frame.shape before: {}'.format(ann_frame.shape))
 
-
-
             maxx = min(img_w - 1, maxx)
             maxy = min(img_h - 1, maxy)
 
@@ -345,6 +343,11 @@ class Visualizer:
         if self._params.resize_factor != 1:
             ann_frame = cv2.resize(ann_frame, (0, 0), fx=self._params.resize_factor,
                                    fy=self._params.resize_factor)
+
+        if img_text:
+            # self._logger.info('img_text: {}'.format(img_text))
+            self._text.put(ann_frame, img_text)
+
         if self.writer is not None:
             self.writer.write(ann_frame)
         if self._params.show:

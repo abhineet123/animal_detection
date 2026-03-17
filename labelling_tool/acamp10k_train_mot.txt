@@ -1,0 +1,5 @@
+N:\Datasets\Acamp\acamp10k\train\human_mot17i_MOT17-13
+N:\Datasets\Acamp\acamp10k\train\human_mot17i_MOT17-02
+N:\Datasets\Acamp\acamp10k\train\human_mot17i_MOT17-05
+N:\Datasets\Acamp\acamp10k\train\human_mot17i_MOT17-09
+N:\Datasets\Acamp\acamp10k\train\human_mot17i_MOT17-10

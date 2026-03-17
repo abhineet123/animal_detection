@@ -6,7 +6,7 @@ import paramparse
 import cv2
 
 from tracking.Visualizer import Visualizer, VisualizerParams, ImageWriter
-from tracking.Utilities import processArguments2, stackImages_ptf, getDateTime
+from tracking.Utilities import processArguments2, stackImages_ptf, getDateTime, CVText
 # from tracking.Server import ServerParams
 from libs.frames_readers import get_frames_reader
 from libs.pascal_voc_io import PascalVocReader
@@ -152,7 +152,7 @@ def visualize(vis_params, logger, img_path, csv_path, class_dict,
 
 class VisParams:
     def __init__(self):
-        self.cfg = ('',)
+        self.cfg = ''
         self.batch_size = 1
         self.class_names_path = '../labelling_tool/data//predefined_classes_orig.txt'
         self.codec = 'H264'
@@ -182,6 +182,7 @@ class VisParams:
         self.only_boxes = 0
         self.crop_size = ''
         self.vis = VisualizerParams()
+        self.ann_fmt = CVText()
 
         self.help = {}
 
@@ -327,7 +328,8 @@ def main():
                 # img_stacked = np.hstack(imgs)
                 stack_params = {
                     'grid_size': grid_size,
-                    'preserve_order': 1
+                    'preserve_order': 1,
+                    'ann_fmt': params.ann_fmt,
                 }
                 if crop_size:
                     stack_params['annotations'] = labels

@@ -1,0 +1,3 @@
+ipsc	green
+diff	red
+cell	white

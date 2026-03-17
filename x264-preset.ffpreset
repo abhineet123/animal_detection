@@ -1,0 +1,11 @@
+vcodec=libx264
+thread_type=slice
+slices=1
+# x264
+profile=baseline
+level=32
+preset=superfast
+tune=zerolatency
+intra-refresh=1
+crf=15
+x264-params=vbv-maxrate=5000:vbv-bufsize=1:slice-max-size=1500:keyint=60

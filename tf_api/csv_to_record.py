@@ -7,13 +7,17 @@ except ImportError as e:
 import pandas as pd
 import os
 import copy
-import sys, time, random
+import sys
+import glob
+import time
+import random
 # import glob
 from random import shuffle
+from collections import OrderedDict
 
 from PIL import Image
 from pprint import pprint, pformat
-from utilities import sortKey, resizeAR
+from utilities import sortKey
 import math
 import paramparse
 import ast
@@ -25,6 +29,107 @@ try:
     from utils import dataset_util
 except ImportError as e:
     print('dataset_util unavailable: {}'.format(e))
+
+
+def linux_path(*args, **kwargs):
+    return os.path.join(*args, **kwargs).replace(os.sep, '/')
+
+
+def get_random_samples_with_min_diff(min_tx, max_tx, n_samples, min_diff, max_trials_per_sample=100):
+    samples = []
+    max_trials = max_trials_per_sample * n_samples
+    n_trials = 0
+    while len(samples) < n_samples:
+        new_sample = random.randint(min_tx, max_tx - 1)
+        if all(abs(new_sample - sample) >= min_diff for sample in samples):
+            samples.append(new_sample)
+
+        n_trials += 1
+        assert n_trials <= max_trials, f"n_trials exceeds max_trials {max_trials} with min_diff {min_diff}"
+
+    return samples
+
+
+class Params(paramparse.CFG):
+    """
+    CSV to TFRecord Converter',
+    :ivar allow_missing_annotations: 'allow_missing_annotations',
+    :ivar allow_seq_skipping: 'allow_seq_skipping',
+    :ivar annotations_list_path: 'annotations_list_path',
+    :ivar check_images: 'check_images',
+    :ivar class_names_path: 'Path to file containing class names',
+    :ivar csv_paths: 'List of paths to csv annotations',
+    :ivar enable_mask: 'enable_mask',
+    :ivar even_sampling: 'use evenly spaced sampling (< 1 would draw samples from only a fraction of the sequence; <
+    0 would invert the sampling)',
+    :ivar exclude_loaded_samples: 'exclude_loaded_samples',
+    :ivar fixed_ar: 'pad images to have fixed aspect ratio',
+    :ivar inverted_sampling: 'invert samples defined by the remaining sampling parameters',
+    :ivar load_samples: 'text files specifying the mapping from sequence paths to sampled files',
+    :ivar load_samples_root: 'folder containing the sample files lists',
+    :ivar min_size: 'min_size',
+    :ivar n_frames: 'n_frames',
+    :ivar only_sampling: 'only_sampling',
+    :ivar output_path: 'Path to output TFRecord',
+    :ivar random_sampling: 'enable random sampling',
+    :ivar root_dir: 'Path to input files',
+    :ivar samples_per_class: 'no. of samples to include per class; < 0 would sample from the end',
+    :ivar samples_per_seq: 'no. of samples to include per sequence; < 0 would sample from the end; overrides
+    samples_per_class',
+    :ivar sampling_ratio: 'proportion of images to include in the tfrecord file',
+    :ivar seq_paths: 'List of paths to image sequences',
+    :ivar shuffle_files: 'shuffle files',
+    :ivar write_annotations_list: 'write_annotations_list:1: yolov3_tf style 2: yolov3 (pt) style',
+    :ivar write_tfrecord: 'write_tfrecord',
+
+    """
+
+    def __init__(self):
+        paramparse.CFG.__init__(self, cfg_prefix='csv_to_record')
+
+        self.allow_missing_annotations = 0
+        self.allow_seq_skipping = 1
+        self.min_samples_per_seq = 0
+        self.annotations_list_path = ''
+        self.check_images = 0
+        self.class_names_path = ''
+        self.csv_paths = ''
+        self.enable_mask = 0
+        self.even_sampling = 0.0
+        self.exclude_loaded_samples = 0
+        self.fixed_ar = 0
+        self.inverted_sampling = 0
+        self.load_samples = []
+        self.load_samples_root = ''
+        self.min_size = 1
+        self.n_frames = 0
+        self.only_sampling = 0
+        self.output_path = ''
+        self.output_name = ''
+        self.random_sampling = 0
+        self.sampling_seq_len = 0
+        self.sampling_min_diff = 0
+        self.img_ext = 'jpg'
+
+        self.root_dir = ''
+        self.samples_per_class = 0
+        self.samples_per_seq = 0
+        self.sampling_ratio = 1.0
+        self.auto_cap_ratio = 1.0
+        self.sample_entire_seq = 0
+        self.n_sample_permutations = 100
+
+        self.seq_paths = ''
+        self.shuffle_files = 0
+        self.write_annotations_list = 2
+        self.annotations_list_sep = ' '
+        self.write_tfrecord = 1
+
+        self.start_id = -1
+        self.end_id = -1
+
+        self.class_from_seq = 1
+        self.class_from_file = 0
 
 
 # image_names = []
@@ -44,7 +149,7 @@ def csv_to_record(df_bboxes, file_path, class_dict, min_size,
     except IndexError:
         raise IOError('No annotations found for {}'.format(file_path))
 
-    # image_name = os.path.join(seq_path, filename)
+    # image_name = linux_path(seq_path, filename)
     image_name = file_path
 
     if check_images:
@@ -174,135 +279,51 @@ def str_to_list(_str, _type=str, _sep=','):
     return k
 
 
-class CSVToTFRecordParams:
-    """
-    :param int allow_missing_annotations: allow_missing_annotations
-    :param int allow_seq_skipping: allow_seq_skipping
-    :param str annotations_list_path: annotations_list_path
-    :param int check_images: check_images
-    :param str class_names_path: Path to file containing class names
-    :param str csv_paths: List of paths to csv annotations
-    :param int enable_mask: enable_mask
-    :param float even_sampling: use evenly spaced sampling (< 1 would draw samples from only a fraction of the sequence; < 0 would invert the sampling)
-    :param int exclude_loaded_samples: exclude_loaded_samples
-    :param int fixed_ar: pad images to have fixed aspect ratio
-    :param int inverted_sampling: invert samples defined by the remaining sampling parameters
-    :param list load_samples: text files specifying the mapping from sequence paths to sampled files
-    :param str load_samples_root: folder containing the sample files lists
-    :param int min_size: min_size
-    :param int n_frames: n_frames
-    :param int only_sampling: only_sampling
-    :param str output_path: Path to output TFRecord
-    :param int random_sampling: enable random sampling
-    :param str root_dir: Path to input files
-    :param int samples_per_class: no. of samples to include per class; < 0 would sample from the end
-    :param int samples_per_seq: no. of samples to include per sequence; < 0 would sample from the end; overrides samples_per_class
-    :param float sampling_ratio: proportion of images to include in the tfrecord file
-    :param str seq_paths: List of paths to image sequences
-    :param int shuffle_files: shuffle files
-    :param int write_annotations_list: write_annotations_list:1: yolov3_tf style 2: yolov3 (pt) style
-    :param int write_tfrecord: write_tfrecord
-    """
-
-    def __init__(self):
-        self.cfg = ''
-        self.allow_missing_annotations = 0
-        self.allow_seq_skipping = 1
-        self.min_samples_per_seq = 0
-        self.annotations_list_path = ''
-        self.check_images = 0
-        self.class_names_path = ''
-        self.csv_paths = ''
-        self.enable_mask = 0
-        self.even_sampling = 0.0
-        self.exclude_loaded_samples = 0
-        self.fixed_ar = 0
-        self.inverted_sampling = 0
-        self.load_samples = []
-        self.load_samples_root = ''
-        self.min_size = 1
-        self.n_frames = 0
-        self.only_sampling = 0
-        self.output_path = ''
-        self.random_sampling = 0
-        self.root_dir = ''
-        self.samples_per_class = 0
-        self.samples_per_seq = 0
-        self.sampling_ratio = 1.0
-        self.sample_entire_seq = 0
-        self.n_sample_permutations = 100
-
-        self.seq_paths = ''
-        self.shuffle_files = 1
-        self.write_annotations_list = 2
-        self.annotations_list_sep = ' '
-        self.write_tfrecord = 1
-        self.help = {
-            '__desc__': 'CSV to TFRecord Converter',
-            'allow_missing_annotations': 'allow_missing_annotations',
-            'allow_seq_skipping': 'allow_seq_skipping',
-            'annotations_list_path': 'annotations_list_path',
-            'check_images': 'check_images',
-            'class_names_path': 'Path to file containing class names',
-            'csv_paths': 'List of paths to csv annotations',
-            'enable_mask': 'enable_mask',
-            'even_sampling': 'use evenly spaced sampling (< 1 would draw samples from only a fraction of the sequence; < 0 would invert the sampling)',
-            'exclude_loaded_samples': 'exclude_loaded_samples',
-            'fixed_ar': 'pad images to have fixed aspect ratio',
-            'inverted_sampling': 'invert samples defined by the remaining sampling parameters',
-            'load_samples': 'text files specifying the mapping from sequence paths to sampled files',
-            'load_samples_root': 'folder containing the sample files lists',
-            'min_size': 'min_size',
-            'n_frames': 'n_frames',
-            'only_sampling': 'only_sampling',
-            'output_path': 'Path to output TFRecord',
-            'random_sampling': 'enable random sampling',
-            'root_dir': 'Path to input files',
-            'samples_per_class': 'no. of samples to include per class; < 0 would sample from the end',
-            'samples_per_seq': 'no. of samples to include per sequence; < 0 would sample from the end; overrides samples_per_class',
-            'sampling_ratio': 'proportion of images to include in the tfrecord file',
-            'seq_paths': 'List of paths to image sequences',
-            'shuffle_files': 'shuffle files',
-            'write_annotations_list': 'write_annotations_list:1: yolov3_tf style 2: yolov3 (pt) style',
-            'write_tfrecord': 'write_tfrecord',
-        }
-
-
 def main():
-    flags = CSVToTFRecordParams()
-    paramparse.process(flags)
+    params = Params()
+    paramparse.process(params)
 
-    output_path = flags.output_path
-    seq_paths = flags.seq_paths
-    csv_paths = flags.csv_paths
-    shuffle_files = flags.shuffle_files
-    n_frames = flags.n_frames
-    class_names_path = flags.class_names_path
-    min_size = flags.min_size
-    root_dir = flags.root_dir
-    allow_missing_annotations = flags.allow_missing_annotations
-    inverted_sampling = flags.inverted_sampling
-    load_samples = flags.load_samples
-    load_samples_root = flags.load_samples_root
-    exclude_loaded_samples = flags.exclude_loaded_samples
-    check_images = flags.check_images
+    output_path = params.output_path
+    output_name = params.output_name
+    seq_paths = params.seq_paths
+    csv_paths = params.csv_paths
+    shuffle_files = params.shuffle_files
+    n_frames = params.n_frames
+    class_names_path = params.class_names_path
+    min_size = params.min_size
+    root_dir = params.root_dir
+    allow_missing_annotations = params.allow_missing_annotations
+    inverted_sampling = params.inverted_sampling
+    load_samples = params.load_samples
+    load_samples_root = params.load_samples_root
+    exclude_loaded_samples = params.exclude_loaded_samples
+    check_images = params.check_images
 
-    sampling_ratio = flags.sampling_ratio
-    random_sampling = flags.random_sampling
-    even_sampling = flags.even_sampling
-    samples_per_class = flags.samples_per_class
-    samples_per_seq = flags.samples_per_seq
-    sample_entire_seq = flags.sample_entire_seq
-    n_sample_permutations = flags.n_sample_permutations
-    min_samples_per_seq = flags.min_samples_per_seq
+    auto_cap_ratio = params.auto_cap_ratio
+    sampling_ratio = params.sampling_ratio
+    random_sampling = params.random_sampling
+    sampling_seq_len = params.sampling_seq_len
+    sampling_min_diff = params.sampling_min_diff
+    even_sampling = params.even_sampling
+    samples_per_class = params.samples_per_class
+    samples_per_seq = params.samples_per_seq
+    sample_entire_seq = params.sample_entire_seq
+    n_sample_permutations = params.n_sample_permutations
+    min_samples_per_seq = params.min_samples_per_seq
 
-    enable_mask = flags.enable_mask
-    only_sampling = flags.only_sampling
-    write_annotations_list = flags.write_annotations_list
-    annotations_list_sep = flags.annotations_list_sep
-    annotations_list_path = flags.annotations_list_path
-    write_tfrecord = flags.write_tfrecord
-    allow_seq_skipping = flags.allow_seq_skipping
+    enable_mask = params.enable_mask
+    only_sampling = params.only_sampling
+    write_annotations_list = params.write_annotations_list
+    annotations_list_sep = params.annotations_list_sep
+    annotations_list_path = params.annotations_list_path
+    write_tfrecord = params.write_tfrecord
+    allow_seq_skipping = params.allow_seq_skipping
+
+    start_id = params.start_id
+    end_id = params.end_id
+
+    class_from_seq = params.class_from_seq
+    class_from_file = params.class_from_file
 
     sample_from_end = 0
     variable_sampling_ratio = 0
@@ -358,6 +379,9 @@ def main():
     class_names = [x.strip() for x in class_names]
     class_dict = {x: i for (i, x) in enumerate(class_names)}
 
+    if output_name:
+        output_path = linux_path(output_path, output_name)
+
     # Writer object for TFRecord creation
     output_dir = os.path.dirname(output_path)
     output_name = os.path.basename(output_path)
@@ -368,19 +392,22 @@ def main():
         os.makedirs(output_dir)
 
     if not annotations_list_path:
-        annotations_list_path = os.path.join(output_dir, output_name_no_ext + '.txt')
+        annotations_list_path = linux_path(output_dir, output_name_no_ext + '.txt')
 
     if seq_paths:
+        if seq_paths.endswith('.txt'):
+            assert os.path.isfile(seq_paths), f"invalid seq_paths list: {seq_paths}"
+
         if os.path.isfile(seq_paths):
             seq_paths = [x.strip() for x in open(seq_paths).readlines() if x.strip()]
         else:
             seq_paths = seq_paths.split(',')
         if root_dir:
-            seq_paths = [os.path.join(root_dir, k) for k in seq_paths]
+            seq_paths = [linux_path(root_dir, k) for k in seq_paths]
 
     elif root_dir:
-        seq_paths = [os.path.join(root_dir, name) for name in os.listdir(root_dir) if
-                     os.path.isdir(os.path.join(root_dir, name))]
+        seq_paths = [linux_path(root_dir, name) for name in os.listdir(root_dir) if
+                     os.path.isdir(linux_path(root_dir, name))]
         seq_paths.sort(key=sortKey)
     else:
         raise IOError('Either seq_paths or root_dir must be provided')
@@ -392,10 +419,23 @@ def main():
             csv_paths = f.readlines()
         csv_paths = [x.strip() for x in csv_paths if x.strip()]
     else:
-        csv_paths = [os.path.join(img_path, 'annotations.csv') for img_path in seq_paths]
+        csv_paths = [linux_path(img_path, 'annotations.csv') for img_path in seq_paths]
     n_seq = len(seq_paths)
     if len(csv_paths) != n_seq:
         raise IOError('Mismatch between image and csv paths counts')
+
+    if start_id < 0:
+        start_id = 0
+    if end_id < start_id:
+        end_id = n_seq - 1
+
+    assert end_id >= start_id, "end_id: {} is < start_id: {}".format(end_id, start_id)
+
+    if start_id > 0 or end_id < n_seq - 1:
+        print('curtailing sequences to between IDs {} and {}'.format(start_id, end_id))
+        seq_paths = seq_paths[start_id:end_id + 1]
+        csv_paths = csv_paths[start_id:end_id + 1]
+        n_seq = len(seq_paths)
 
     if not load_samples:
         exclude_loaded_samples = 0
@@ -411,11 +451,11 @@ def main():
     if load_samples:
         print('load_samples: {}'.format(pformat(load_samples)))
         if load_samples_root:
-            load_samples = [os.path.join(load_samples_root, k) for k in load_samples if k]
+            load_samples = [linux_path(load_samples_root, k) for k in load_samples if k]
         print('Loading samples from : {}'.format(pformat(load_samples)))
         for _f in load_samples:
             if os.path.isdir(_f):
-                _f = os.path.join(_f, 'seq_to_samples.txt')
+                _f = linux_path(_f, 'seq_to_samples.txt')
             with open(_f, 'r') as fid:
                 curr_seq_to_samples = ast.literal_eval(fid.read())
                 for _seq in curr_seq_to_samples:
@@ -427,32 +467,45 @@ def main():
         if exclude_loaded_samples:
             print('Excluding loaded samples from source files')
 
-    img_ext = 'jpg'
     tfrecord_data = []
     total_samples = 0
     total_files = 0
 
-    seq_to_src_files = {}
+    seq_to_src_files = OrderedDict()
     class_to_n_files = {_class: 0 for _class in class_names}
     class_to_n_seq = {_class: 0 for _class in class_names}
     class_to_n_files_per_seq = {_class: {} for _class in class_names}
 
     seq_to_n_files = {}
 
-    def getClass(seq_path):
-        for _class in class_names:
-            if _class in os.path.basename(seq_path):
-                return _class
+    def get_class_from_file(seq_path):
+        with open(linux_path(seq_path, 'class_to_n_files.txt'), 'r') as fid:
+            class_to_n_files = fid.readline()
+        class_, _ = class_to_n_files.split('\t')
+        return class_
+
+    def get_class(seq_path):
+        for class_ in class_names:
+            if class_ in os.path.basename(seq_path):
+                return class_
         raise IOError('No class found for {}'.format(seq_path))
 
     seq_to_sampling_ratio = {k: sampling_ratio for k in seq_paths}
-    seq_to_class = {k: getClass(k) for k in seq_paths}
+
+    if class_from_file:
+        seq_to_class = {k: get_class_from_file(k) for k in seq_paths}
+    elif class_from_seq:
+        seq_to_class = {k: get_class(k) for k in seq_paths}
+    else:
+        """assume that there is only one class"""
+        print('assigning class {} to all sequences'.format(class_names[0]))
+        seq_to_class = {k: class_names[0] for k in seq_paths}
 
     empty_seqs = []
     non_empty_seq_ids = []
     for idx, seq_path in enumerate(seq_paths):
-        src_files = [os.path.join(seq_path, k).replace(os.sep, '/') for k in os.listdir(seq_path) if
-                     os.path.splitext(k.lower())[1][1:] == img_ext]
+
+        src_files = glob.glob(linux_path(seq_path, f'*.{params.img_ext}'), recursive=False)
 
         if exclude_loaded_samples:
             loaded_samples = seq_to_samples[seq_path]
@@ -563,7 +616,7 @@ def main():
 
     n_sampled_seq = n_unsampled_seq = 0
 
-    valid_seq_to_samples = {}
+    valid_seq_to_samples = OrderedDict()
 
     for idx, seq_path in enumerate(seq_paths):
         src_files = seq_to_src_files[seq_path]
@@ -571,8 +624,12 @@ def main():
         sampling_ratio = seq_to_sampling_ratio[seq_path]
 
         if sampling_ratio > 1.0:
-            raise IOError('Invalid sampling_ratio: {} for sequence: {} with {} files'.format(
-                sampling_ratio, seq_path, n_files))
+            msg = f'\nInvalid sampling_ratio: {sampling_ratio} for sequence: {seq_path} with {n_files} files\n'
+            if not auto_cap_ratio:
+                raise IOError(msg)
+            print(msg)
+            sampling_ratio = 1.0
+
         if load_samples and not exclude_loaded_samples:
             try:
                 loaded_samples = seq_to_samples[seq_path]
@@ -587,7 +644,8 @@ def main():
             if sampling_ratio == 1.0 or n_loaded_samples == 0:
                 sampled_files = loaded_samples
             else:
-                n_samples = int(n_loaded_samples * sampling_ratio)
+                # n_samples = n_loaded_samples * sampling_ratio
+                n_samples = round(n_loaded_samples * sampling_ratio)
                 if n_samples < min_samples_per_seq:
                     sampling_ratio = float(min_samples_per_seq) / float(n_files)
                     n_samples = min_samples_per_seq
@@ -595,7 +653,23 @@ def main():
                         seq_path, sampling_ratio, min_samples_per_seq))
 
                 if random_sampling:
-                    sampled_files = random.sample(loaded_samples, n_samples)
+                    if sampling_seq_len > 1:
+                        assert n_samples % sampling_seq_len == 0, \
+                            "n_samples must be divisible by sampling sequence length"
+                        assert n_samples <= len(loaded_samples), \
+                            "n_samples must be less than or equal to n_files"
+
+                        n_sampled_seq = n_samples // sampling_seq_len
+
+                        seq_starts = get_random_samples_with_min_diff(
+                            0, len(loaded_samples) - n_sampled_seq, n_sampled_seq, sampling_seq_len)
+                        seq_starts.sort()
+                        seq_ends = [seq_start + sampling_seq_len for seq_start in seq_starts]
+                        sampled_files = []
+                        for seq_start, seq_end in zip(seq_starts, seq_ends, strict=True):
+                            sampled_files += loaded_samples[seq_start:seq_end]
+                    else:
+                        sampled_files = random.sample(loaded_samples, n_samples)
                 elif even_sampling:
                     if sampling_ratio > even_sampling:
                         raise SystemError('{} :: sampling_ratio: {} is greater than even_sampling: {}'.format(
@@ -633,7 +707,33 @@ def main():
                     sampled_files = []
                 else:
                     if random_sampling:
-                        sampled_files = random.sample(src_files, n_samples)
+                        n_src_files = len(src_files)
+
+                        if sampling_seq_len > 1:
+                            assert n_samples % sampling_seq_len == 0, (
+                                "n_samples must be divisible by sampling sequence "
+                                "length")
+                            assert n_samples <= n_src_files, "n_samples must be less than or equal to n_src_files"
+
+                            n_sampled_seq = n_samples // sampling_seq_len
+
+                            if sampling_min_diff <= 0:
+                                sampling_min_diff = sampling_seq_len
+
+                            seq_starts = get_random_samples_with_min_diff(
+                                min_tx=0, max_tx=n_src_files - sampling_seq_len,
+                                n_samples=n_sampled_seq, min_diff=sampling_min_diff,
+                                max_trials_per_sample=100, )
+
+                            seq_starts.sort()
+                            seq_ends = [seq_start + sampling_seq_len for seq_start in seq_starts]
+                            sampled_files = []
+                            for seq_start, seq_end in zip(seq_starts, seq_ends, strict=True):
+                                assert seq_end <= n_src_files, "seq_end cannot be greater than n_src_files"
+                                sampled_files += src_files[seq_start:seq_end]
+                        else:
+                            sampled_files = random.sample(src_files, n_samples)
+
                     elif even_sampling:
                         if sampling_ratio > even_sampling:
                             raise SystemError('{} :: sampling_ratio: {} is greater than even_sampling: {}'.format(
@@ -712,9 +812,9 @@ def main():
                 else:
                     raise IOError('No annotations found for {}'.format(file_path))
 
-            no_instances = len(df_multiple_instance.index)
+            num_instances = len(df_multiple_instance.index)
 
-            df = df.drop(df_multiple_instance.index[:no_instances])
+            # df = df.drop(df_multiple_instance.index[:num_instances])
             tfrecord_data.append((df_multiple_instance, file_path))
 
     seq_to_samples = valid_seq_to_samples
@@ -732,23 +832,32 @@ def main():
 
     out_dir = os.path.dirname(output_path)
     out_name = os.path.splitext(os.path.basename(output_path))[0]
-    log_dir = os.path.join(out_dir, out_name)
+    log_dir = linux_path(out_dir, out_name)
     if not os.path.isdir(log_dir):
         os.makedirs(log_dir)
     print('\nWriting sampling log to: {}\n'.format(log_dir))
-    with open(os.path.join(log_dir, 'seq_to_src_files.txt'), 'w') as logFile:
-        pprint(seq_to_src_files, logFile)
-    with open(os.path.join(log_dir, 'seq_to_samples.txt'), 'w') as logFile:
-        pprint(seq_to_samples, logFile)
-    with open(os.path.join(log_dir, 'class_to_n_samples.txt'), 'w') as logFile:
-        pprint(class_to_n_samples, logFile)
-    with open(os.path.join(log_dir, 'class_to_n_files.txt'), 'w') as logFile:
-        pprint(class_to_n_files, logFile)
-    with open(os.path.join(log_dir, 'class_to_n_samples.txt'), 'w') as logFile:
-        pprint(class_to_n_samples, logFile)
-    with open(os.path.join(log_dir, 'all_sampled_files.txt'), 'w') as logFile:
-        logFile.write('\n'.join(all_sampled_files))
+    import json
+    with open(linux_path(log_dir, 'seq_to_src_files.txt'), 'w') as logFile:
+        # pprint(seq_to_src_files, logFile)
+        logFile.write(json.dumps(seq_to_src_files))
+    with open(linux_path(log_dir, 'seq_to_samples.txt'), 'w') as logFile:
+        # pprint(seq_to_samples, logFile)
+        logFile.write(json.dumps(seq_to_samples))
+    with open(linux_path(log_dir, 'class_to_n_samples.txt'), 'w') as logFile:
         # pprint(class_to_n_samples, logFile)
+        logFile.write(json.dumps(class_to_n_samples))
+    with open(linux_path(log_dir, 'class_to_n_files.txt'), 'w') as logFile:
+        # pprint(class_to_n_files, logFile)
+        logFile.write(json.dumps(class_to_n_files))
+    with open(linux_path(log_dir, 'class_to_n_samples.txt'), 'w') as logFile:
+        # pprint(class_to_n_samples, logFile)
+        logFile.write(json.dumps(class_to_n_samples))
+    with open(linux_path(log_dir, 'all_sampled_files.txt'), 'w') as logFile:
+        logFile.write('\n'.join(all_sampled_files))
+        # logFile.write(json.dumps(all_sampled_files))
+
+    if not write_tfrecord and not write_annotations_list:
+        only_sampling = 1
 
     if only_sampling:
         return
@@ -780,7 +889,7 @@ def main():
     out_diff = int(_n_frames * 0.05)
     n_ignored_images = 0
     file_path_id = 0
-    start_time = time.clock()
+    start_time = time.time()
     for frame_id in range(_n_frames):
         df_multiple_instance, file_path = tfrecord_data[frame_id]
         # Send all object instances of a filename to become TFexample
@@ -824,12 +933,12 @@ def main():
                 n_ignored_images += 1
 
         if frame_id % out_diff == 0:
-            end_time = time.clock()
+            end_time = time.time()
             current_fps = 100.0 / (end_time - start_time)
             sys.stdout.write('\rDone {:d}/{:d} frames fps: {}'.format(
                 frame_id, _n_frames, current_fps))
             sys.stdout.flush()
-            start_time = time.clock()
+            start_time = time.time()
 
     print()
 

@@ -122,6 +122,11 @@ def test(opt, model=None):
 
     print('Saving csv results to: {}'.format(opt.save_dir))
 
+    mot_save_dir = os.path.join(opt.save_dir, 'MOT')
+    if not os.path.isdir(mot_save_dir):
+        os.makedirs(mot_save_dir)
+    print('Saving MOT results to: {}'.format(mot_save_dir))
+
     nms_type = opt.nms_type.upper()
     conf_thresh = opt.conf_thresh
     nms_thresh = opt.nms_thresh
@@ -165,6 +170,7 @@ def test(opt, model=None):
     # jdict, stats, ap, ap_class = [], [], [], []
 
     csv_raw = []
+    mot_raw = []
     prev_eval_seq = ''
     seq_id = 0
     n_frames = len(dataset.img_files)
@@ -178,7 +184,7 @@ def test(opt, model=None):
     tracking_fps = 0
 
     print('Processing {} sequences'.format(dataset.n_sequences))
-    for batch_i, (orig_imgs, imgs, targets, paths, shapes) in enumerate(dataloader):
+    for batch_i, (indices, orig_imgs, imgs, targets, paths, shapes) in enumerate(dataloader):
         # tqdm(dataloader, desc='Running on {} image batches'.format(batch_size)))
 
         actual_batch_size, _, height, width = imgs.shape  # batch size, channels, height, width
@@ -254,6 +260,7 @@ def test(opt, model=None):
             # seen += 1
 
             curr_frame = orig_imgs[si]
+            # eval_file_id = indices[si]
             eval_file = paths[si]
             eval_seq = os.path.dirname(eval_file)
 
@@ -272,7 +279,16 @@ def test(opt, model=None):
                     csv_file_name = os.path.join(opt.save_dir, '{}.csv'.format(eval_seq_name))
                     print('\nWriting csv data for {} frames to: {}\n'.format(len(csv_raw), csv_file_name))
                     pd.DataFrame(csv_raw).to_csv(csv_file_name)
+
+                    mot_file_name = os.path.join(mot_save_dir, '{}.txt'.format(eval_seq_name))
+                    print('\nWriting MOT data for {} frames to: {}\n'.format(len(mot_raw), mot_file_name))
+                    save_fmt = '%d,%d,%f,%f,%f,%f,%f,%f,%f,%f'
+                    mot_raw = np.array(mot_raw)
+                    results = np.concatenate((mot_raw, np.tile((-1, -1, -1), (mot_raw.shape[0], 1))), axis=1)
+                    np.savetxt(mot_file_name, results, fmt=save_fmt, delimiter=',', newline='\n')
+
                 csv_raw = []
+                mot_raw = []
                 trackers = []
                 prev_eval_seq = eval_seq
                 seq_id += 1
@@ -431,7 +447,8 @@ def test(opt, model=None):
 
             for di, bbox in enumerate(bboxes):
                 xmin, ymin, xmax, ymax, label, confidence, target_id = bbox
-
+                w = xmax - xmin
+                h = ymax - ymin
                 csv_raw.append({
                     'filename': filename,
                     'width': width,
@@ -443,9 +460,11 @@ def test(opt, model=None):
                     'ymax': int(ymax),
                     'confidence': confidence,
                 })
+
+                mot_raw.append([seq_frame_id + si + 1, -1, xmin, ymin, w, h, confidence])
+
                 if opt.vis:
-                    w = xmax - xmin
-                    h = ymax - ymin
+
                     if target_id == 0:
                         # associated detection
                         col = 'blue'
@@ -500,6 +519,13 @@ def test(opt, model=None):
         csv_file_name = os.path.join(opt.save_dir, '{}.csv'.format(eval_seq_name))
         print('\nWriting csv data for {} frames to: {}\n'.format(len(csv_raw), csv_file_name))
         pd.DataFrame(csv_raw).to_csv(csv_file_name)
+
+        mot_file_name = os.path.join(mot_save_dir, '{}.txt'.format(eval_seq_name))
+        print('\nWriting MOT data for {} frames to: {}\n'.format(len(mot_raw), mot_file_name))
+        save_fmt = '%d,%d,%f,%f,%f,%f,%f,%f,%f,%f'
+        mot_raw = np.array(mot_raw)
+        results = np.concatenate((mot_raw, np.tile((-1, -1, -1), (mot_raw.shape[0], 1))), axis=1)
+        np.savetxt(mot_file_name, results, fmt=save_fmt, delimiter=',', newline='\n')
 
     # if enable_eval:
     #     cmd = 'python3 ../tf_api/tf_api_eval.py ' \

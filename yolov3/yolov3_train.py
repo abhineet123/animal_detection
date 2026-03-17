@@ -1,4 +1,4 @@
-import argparse
+# import argparse
 import time
 import paramparse
 
@@ -194,9 +194,11 @@ def train(
 
     print('Saving weights to: {}'.format(weights_dir))
     best_chkpt = ''
-    for epoch in range(start_epoch, epochs):
+    _range = tqdm(range(start_epoch, epochs), ncols=50)
+
+    for epoch in _range:
         model.train()
-        print(('\n%8s%12s' + '%10s' * 7) % ('Epoch', 'Batch', 'xy', 'wh', 'conf', 'cls', 'total', 'targets', 'time'))
+        # print(('\n%8s%12s' + '%10s' * 7) % ('Epoch', 'Batch', 'xy', 'wh', 'conf', 'cls', 'total', 'targets', 'time'))
 
         if update_scheduler_first:
             # Update scheduler
@@ -222,7 +224,7 @@ def train(
                                          k=dataset.n_files)  # random weighted index
 
         mloss = torch.zeros(5).to(device)  # mean losses
-        for i, (_, imgs, targets, _, _) in enumerate(dataloader):
+        for i, (_, _, imgs, targets, _, _) in tqdm(enumerate(dataloader), total=nb, ncols=50):
             imgs = imgs.to(device)
             targets = targets.to(device)
 
@@ -263,7 +265,7 @@ def train(
                 '%g/%g' % (epoch, epochs - 1),
                 '%g/%g' % (i, nb - 1), *mloss, len(targets), time.time() - t)
             t = time.time()
-            print(s)
+            # print(s + '\r')
 
             lxy, lwh, lconf, lcls, _loss = loss_items.cpu().numpy()
             _iter = i + (nb - 1) * epoch

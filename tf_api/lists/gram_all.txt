@@ -1,0 +1,16 @@
+idot_1_intersection_city_day
+idot_2_intersection_suburbs
+idot_3_highway
+idot_4_intersection_city_day
+idot_5_intersection_suburbs
+idot_6_highway
+idot_7_intersection_city_night
+idot_8_intersection_city_night
+idot_9_intersection_city_day
+idot_10_city_road
+idot_11_highway
+idot_12_city_road
+idot_13_intersection_city_day
+M-30
+M-30-HD
+Urban1

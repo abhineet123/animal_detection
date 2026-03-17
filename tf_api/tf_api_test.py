@@ -2,7 +2,9 @@ import cv2
 import numpy as np
 import pandas as pd
 import time
-import sys, os
+import sys
+import shutil
+import os
 from datetime import datetime
 from pprint import pprint
 import imageio
@@ -53,6 +55,7 @@ params = {
     'file_name': '',
     'list_file_name': '',
     'model_list': '',
+    'out_aspect_ratio': 0,
     'model_id': 0,
     'root_dir': '',
     'save_dir': '',
@@ -75,6 +78,7 @@ params = {
     'write_det': 1,
     'write_data': 0,
     'classes_to_include': [],
+    'n_objs_to_include': 0,
     'use_ptgrey': 0,
     'threaded_mode': 1,
     'rgb_mode': 1,
@@ -85,9 +89,22 @@ params = {
     'use_ffmpeg': 0,
     'ffmpeg_size': '1280x720',
     'ffmpeg_url': 'udp://127.0.0.1:8888',
+    'save_patches': 0,
+    'img_ext': 'jpg',
+    'extend_vertically': 1,
+    'patch_ar': 0.,
+    'recursive': 0.,
+    'patch_out_root_dir': '',
+    'gpu': '',
 }
 
 processArguments(sys.argv[1:], params)
+
+gpu = params['gpu']
+if gpu:
+    print('setting gpu to {}'.format(gpu))
+    os.environ["CUDA_VISIBLE_DEVICES"] = gpu
+
 _ckpt_path = params['ckpt_path']
 _labels_path = params['labels_path']
 _n_classes = params['n_classes']
@@ -95,6 +112,7 @@ model_list = params['model_list']
 model_id = params['model_id']
 file_name = params['file_name']
 list_file_name = params['list_file_name']
+out_aspect_ratio = params['out_aspect_ratio']
 root_dir = params['root_dir']
 save_dir = params['save_dir']
 save_file_name = params['save_file_name']
@@ -114,6 +132,7 @@ gpu_memory_fraction = params['gpu_memory_fraction']
 write_det = params['write_det']
 write_data = params['write_data']
 classes_to_include = params['classes_to_include']
+n_objs_to_include = params['n_objs_to_include']
 use_ptgrey = params['use_ptgrey']
 rgb_mode = params['rgb_mode']
 video_mode = params['video_mode']
@@ -124,6 +143,15 @@ mtf_args = params['mtf_args']
 use_ffmpeg = params['use_ffmpeg']
 _ffmpeg_size = params['ffmpeg_size']
 ffmpeg_url = params['ffmpeg_url']
+save_patches = params['save_patches']
+img_ext = params['img_ext']
+extend_vertically = params['extend_vertically']
+patch_ar = params['patch_ar']
+recursive = params['recursive']
+patch_out_root_dir = params['patch_out_root_dir']
+
+img_exts = ('.jpg', '.bmp', '.jpeg', '.png', '.tif', '.tiff', '.webp')
+ignored_exts = ('.db',)
 
 if mtf_args:
     mtf_args = mtf_args.replace(',', ' ')
@@ -166,7 +194,7 @@ if model_list:
         raise IOError('Checkpoint list file: {} does not exist'.format(model_list))
     model_list = [x.strip().split(',') for x in open(model_list).readlines() if x.strip()]
     model_list = [[ckpt_path, labels_path, int(n_classes), ckpt_label]
-                      for ckpt_path, labels_path, n_classes, ckpt_label in model_list]
+                  for ckpt_path, labels_path, n_classes, ckpt_label in model_list]
 else:
     model_list = [[_ckpt_path, _labels_path, _n_classes, ''], ]
     model_id = 0
@@ -176,7 +204,7 @@ if not os.path.exists(ckpt_path):
     raise IOError('Checkpoint file: {} does not exist'.format(ckpt_path))
 
 if os.path.isdir(ckpt_path):
-    if 'inference' in os.path.basename(ckpt_path) and\
+    if 'inference' in os.path.basename(ckpt_path) and \
             os.path.isfile(os.path.join(ckpt_path, 'frozen_inference_graph.pb')):
         ckpt_path = os.path.join(ckpt_path, 'frozen_inference_graph.pb')
     else:
@@ -218,8 +246,8 @@ category_index_dict = {k['id']: k['name'] for k in category_index.values()}
 
 # print('categories: ', categories)
 # print('category_index: ', category_index)
-print('category_index_dict:')
-pprint(category_index_dict)
+# print('category_index_dict:')
+# pprint(category_index_dict)
 
 if write_data == 1:
     data_out_fmt = 'jpg'
@@ -260,30 +288,49 @@ elif root_dir:
     if root_dir.startswith('camera'):
         file_list = [root_dir]
         using_camera = 1
+        print(f'Getting images from camera')
     else:
         file_list = []
-        if input_type:
-            if input_type == 'videos':
-                for ext in video_exts:
-                    file_list += [os.path.join(root_dir, k) for k in os.listdir(root_dir) if
-                                  not os.path.isdir(os.path.join(root_dir, k)) and k.endswith('.{:s}'.format(ext))]
-                if len(file_list) == 0:
-                    file_gen = [[os.path.join(dirpath, f) for f in filenames if
-                                 os.path.splitext(f.lower())[1][1:] in video_exts]
-                                for (dirpath, dirnames, filenames) in os.walk(root_dir)]
-                    file_list = [item for sublist in file_gen for item in sublist]
-                    print('Here we are')
+        root_dirs = root_dir.split(',')
+        print(f'root_dir: {root_dir}')
+        print(f'root_dirs: {root_dirs}')
+
+        for root_dir in root_dirs:
+            _file_list = []
+            if input_type:
+                if input_type == 'videos':
+                    print(f'Getting videos from {root_dir}')
+                    for ext in video_exts:
+                        _file_list += [os.path.join(root_dir, k) for k in os.listdir(root_dir) if
+                                       not os.path.isdir(os.path.join(root_dir, k)) and k.endswith('.{:s}'.format(ext))]
+                    if len(_file_list) == 0:
+                        print(f'Looking recursively for videos in {root_dir}')
+                        file_gen = [[os.path.join(dirpath, f) for f in filenames if
+                                     os.path.splitext(f.lower())[1][1:] in video_exts]
+                                    for (dirpath, dirnames, filenames) in os.walk(root_dir)]
+                        _file_list = [item for sublist in file_gen for item in sublist]
+                        print('Here we are')
+                else:
+                    print(f'Getting {input_type} files from {root_dir}')
+                    _file_list += [os.path.join(root_dir, k) for k in os.listdir(root_dir) if
+                                   not os.path.isdir(os.path.join(root_dir, k)) and k.endswith(
+                                       '.{:s}'.format(input_type))]
             else:
-                file_list += [os.path.join(root_dir, k) for k in os.listdir(root_dir) if
-                              not os.path.isdir(os.path.join(root_dir, k)) and k.endswith('.{:s}'.format(input_type))]
-        else:
-            file_list = [os.path.join(root_dir, name) for name in os.listdir(root_dir) if
-                         os.path.isdir(os.path.join(root_dir, name))]
-        file_list.sort(key=sortKey)
+                print(f'Getting image sequences from {root_dir}')
+                _file_list = [os.path.join(root_dir, name) for name in os.listdir(root_dir) if
+                              os.path.isdir(os.path.join(root_dir, name))]
+
+                _file_list.append(root_dir)
+
+                # if not file_list:
+                #     print(f'No image sequences found in {root_dir} so using it as one')
+                #     file_list = [root_dir, ]
+            _file_list.sort(key=sortKey)
+            file_list += _file_list
 else:
     if not file_name:
         raise IOError('Either list file or a single sequence file must be provided')
-    file_list = [file_name]
+    file_list = [file_name, ]
 
 print('file_list: ', file_list)
 
@@ -292,7 +339,6 @@ if using_camera:
     print('Running over live camera sequence')
 else:
     print('Running over {} sequence(s)'.format(n_seq))
-
 
 if not save_dir:
     save_dir = 'results'
@@ -307,7 +353,7 @@ avg_fps_list = np.zeros((n_seq,))
 session_config = tf.ConfigProto(allow_soft_placement=True,
                                 log_device_placement=False)
 session_config.gpu_options.allow_growth = allow_memory_growth
-session_config.gpu_options.per_process_gpu_memory_fraction=gpu_memory_fraction
+session_config.gpu_options.per_process_gpu_memory_fraction = gpu_memory_fraction
 
 n_gt = n_tp = n_fn = n_fp = 0
 _recall = _precision = 0.0
@@ -817,7 +863,6 @@ with detection_graph.as_default():
 
         for file_idx, file_name in enumerate(file_list):
             seq_name = os.path.splitext(os.path.basename(file_name))[0]
-
             if using_camera and seq_name.startswith('camera'):
                 try:
                     cam_id = int(seq_name.split('_')[-1])
@@ -829,14 +874,73 @@ with detection_graph.as_default():
                     else:
                         cap = cv2.VideoCapture(cam_id)
                 write_det = 0
+
+                if save_patches:
+                    patch_out_dir = 'log/camera/patches'
+                    if not os.path.isdir(patch_out_dir):
+                        os.makedirs(patch_out_dir)
+
+                    print(f'{seq_name}: saving patches to {patch_out_dir}')
             else:
                 use_ptgrey = 0
                 print('sequence {}/{}: {}: '.format(file_idx + 1, n_seq, seq_name))
-                if os.path.isdir(file_name):
-                    if use_mtf:
-                        cap = mtf.VideoCapture(file_name, mtf_args)
+
+                # if save_patches:
+                #     patch_out_dir = os.path.join(file_name, 'patches')
+                #     if not os.path.isdir(patch_out_dir):
+                #         os.makedirs(patch_out_dir)
+                #
+                #     print(f'{seq_name}: saving patches to {patch_out_dir}')
+
+                if save_patches:
+                    if patch_out_root_dir:
+                        patch_out_dir = os.path.join(patch_out_root_dir, seq_name)
                     else:
-                        cap = cv2.VideoCapture(os.path.join(file_name, 'image%06d.jpg'))
+                        patch_out_dir = os.path.join(os.path.dirname(file_name), 'patches', seq_name)
+
+                    if not os.path.isdir(patch_out_dir):
+                        os.makedirs(patch_out_dir)
+
+                    patch_out_dir = os.path.abspath(patch_out_dir)
+
+                    print(f'{seq_name}: saving patches to {patch_out_dir}')
+
+                if os.path.isdir(file_name):
+
+                    if recursive:
+                        src_file_gen = [[os.path.join(dirpath, f) for f in filenames if
+                                         os.path.splitext(f.lower())[1] in img_exts]
+                                        for (dirpath, dirnames, filenames) in os.walk(file_name, followlinks=True)]
+                        src_files = [item for sublist in src_file_gen for item in sublist]
+
+                        # _src_file_list = list(src_file_gen)
+                        # src_file_list = []
+                        # for x in _src_file_list:
+                        #     src_file_list += x
+                    else:
+                        all_src_files = [os.path.join(file_name, k) for k in os.listdir(file_name) if
+                                         os.path.isfile(os.path.join(file_name, k)) and
+                                         os.path.splitext(k.lower())[1] not in ignored_exts]
+                        src_files = [os.path.join(file_name, k) for k in os.listdir(file_name) if
+                                     os.path.splitext(k.lower())[1] in img_exts]
+
+                        skipped_files = list(set(all_src_files) - set(src_files))
+                        if skipped_files:
+                            print(f'skipped_files: {skipped_files}')
+
+                    # src_files = [os.path.join(file_name, k) for k in os.listdir(file_name) if
+                    #              os.path.splitext(k.lower())[1][1:] == img_ext]
+                    src_files.sort(key=sortKey)
+                    if not src_files:
+                        print(f'No src_files found in {file_name}')
+                        continue
+                    else:
+                        print(f'Found {len(src_files)} src_files in {file_name}')
+
+                    # if use_mtf:
+                    #     cap = mtf.VideoCapture(file_name, mtf_args)
+                    # else:
+                    #     cap = cv2.VideoCapture(os.path.join(file_name, 'image%06d.jpg'))
                 else:
                     if not os.path.exists(file_name):
                         raise IOError('Source video file: {} does not exist'.format(file_name))
@@ -851,6 +955,9 @@ with detection_graph.as_default():
             if cap is not None:
                 width = cap.get(3)
                 height = cap.get(4)
+            else:
+                image_np = cv2.imread(src_files[0])
+                height, width = image_np.shape[:2]
 
             width = int(width)
             height = int(height)
@@ -921,6 +1028,7 @@ with detection_graph.as_default():
             exit_seq = 0
             while True:
                 images = []
+                image_paths = []
                 for i in range(batch_size):
                     if use_ffmpeg:
                         with ffmpeg_mutex:
@@ -961,11 +1069,24 @@ with detection_graph.as_default():
                                 image_np = cv2.cvtColor(raw_image.reshape((height, width)), cv2.COLOR_GRAY2RGB)
                     else:
                         cap_start_t = time.time()
-                        ret, image_np = cap.read()
-                        if not ret:
-                            break
+
+                        if cap is None:
+                            try:
+                                file_path = src_files[frame_id]
+                            except IndexError:
+                                break
+                            else:
+                                image_np = cv2.imread(file_path)
+                                image_paths.append(file_path)
+                        else:
+                            ret, image_np = cap.read()
+                            if not ret:
+                                break
                         cap_end_t = time.time()
-                        cap_fps = 1.0 / float(cap_end_t - cap_start_t)
+                        try:
+                            cap_fps = 1.0 / float(cap_end_t - cap_start_t)
+                        except ZeroDivisionError:
+                            cap_fps = 0
                         # cap_fps2 = cap_fps
 
                     images.append(image_np)
@@ -1031,6 +1152,9 @@ with detection_graph.as_default():
                 for i in range(curr_batch_size):
                     image_np = np.squeeze(images[i])
 
+                    img_height, img_width = image_np.shape[:2]
+
+                    img_ar = float(img_width) / float(img_height)
                     frame_id += 1
 
                     curr_boxes = np.squeeze(boxes[i])
@@ -1056,6 +1180,153 @@ with detection_graph.as_default():
                         # print('\n__curr_boxes: ', curr_boxes)
                         # print('__curr_classes: ', curr_classes)
                         # print('__curr_scores: ', curr_scores)
+
+                    if n_objs_to_include and n_objs_to_include < n_objs:
+                        _sort_idx = np.argsort(curr_scores, axis=0)[::-1]
+                        sort_idx = np.asarray(_sort_idx[:n_objs_to_include])
+
+                        curr_boxes = curr_boxes[sort_idx]
+                        curr_classes = curr_classes[sort_idx]
+                        curr_scores = curr_scores[sort_idx]
+
+                        n_objs = n_objs_to_include
+
+                    if save_patches:
+                        for __patch_id in range(n_objs):
+                            # print(f'curr_boxes: {curr_boxes}')
+                            _ymin, _xmin, _ymax, _xmax = curr_boxes[__patch_id]
+
+                            xmin = int(_xmin * img_width)
+                            xmax = int(_xmax * img_width) + 1
+                            ymin = int(_ymin * img_height)
+                            ymax = int(_ymax * img_height) + 1
+
+                            if extend_vertically:
+                                ymin = 0
+                                ymax = img_height
+                                _ymin = 0
+                                _ymax = 1
+                                curr_boxes[__patch_id] = [_ymin, _xmin, _ymax, _xmax]
+
+                            curr_w = float(xmax - xmin)
+                            curr_h = float(ymax - ymin)
+
+                            curr_ar = curr_w / curr_h
+
+                            print(f'\npatch_ar: {patch_ar}')
+                            print(f'curr_ar: {curr_ar}')
+
+                            if patch_ar != 0:
+                                if curr_ar < patch_ar:
+                                    """patch is too narrow"""
+
+                                    """make patch as wide as possible"""
+                                    cx, cy = float(xmax + xmin) / 2.0, float(ymax + ymin) / 2.0
+                                    patch_w = curr_h * patch_ar
+                                    xmin = max(0, cx - patch_w / 2.0)
+                                    xmax = min(img_width, cx + patch_w / 2.0)
+
+                                    curr_w = float(xmax - xmin)
+                                    curr_ar = curr_w / curr_h
+
+                                    _xmin = xmin / img_width
+                                    _xmax = xmax / img_width
+
+                                    xmin = int(xmin)
+                                    xmax = int(xmax)
+
+                                    if curr_ar < patch_ar:
+                                        """make patch shorter"""
+                                        patch_h = curr_w / patch_ar
+                                        ymin = max(0, cy - patch_h / 2.0)
+                                        ymax = min(img_height, cy + patch_h / 2.0)
+                                        _ymin = ymin / img_height
+                                        _ymax = ymax / img_height
+
+                                        ymin = int(ymin)
+                                        ymax = int(ymax)
+
+                                    curr_boxes[__patch_id] = [_ymin, _xmin, _ymax, _xmax]
+                                else:
+                                    """patch is too wide"""
+
+                                    """make patch as tall as possible"""
+                                    cx, cy = float(xmax + xmin) / 2.0, float(ymax + ymin) / 2.0
+                                    patch_h = curr_w / patch_ar
+
+                                    ymin = max(0, cy - patch_h / 2.0)
+                                    ymax = min(img_height, cy + patch_h / 2.0)
+
+                                    _ymin = ymin / img_height
+                                    _ymax = ymax / img_height
+
+                                    ymin = int(ymin)
+                                    ymax = int(ymax)
+
+                                    curr_h = float(ymax - ymin)
+                                    curr_ar = curr_w / curr_h
+                                    if curr_ar > patch_ar:
+                                        """make patch narrower"""
+                                        patch_w = curr_h * patch_ar
+                                        xmin = max(0, cx - patch_w / 2.0)
+                                        xmax = min(img_width, cx + patch_w / 2.0)
+                                        _xmin = xmin / img_width
+                                        _xmax = xmax / img_width
+
+                                        xmin = int(xmin)
+                                        xmax = int(xmax)
+
+                                curr_w = float(xmax - xmin)
+                                curr_h = float(ymax - ymin)
+                                curr_ar = curr_w / curr_h
+                                print(f'curr_ar: {curr_ar}\n')
+
+                            patch = image_np[ymin:ymax, xmin:xmax, ...].squeeze()
+
+                            if img_ar > patch_ar:
+                                if image_paths:
+                                    image_path = image_paths[i]
+                                    out_image_dir = os.path.dirname(image_path)
+                                    out_image_name = os.path.basename(image_path)
+                                    dst_image_name = out_image_name
+                                    if __patch_id > 0:
+                                        out_image_name_no_ext, out_image_ext = os.path.splitext(out_image_name)
+                                        out_image_name = f'{out_image_name_no_ext}_{__patch_id}{out_image_ext}'
+                                else:
+                                    out_image_name = 'frame{:06d}.jpg'.format(frame_id)
+                                    dst_image_name = out_image_name
+                                    if __patch_id > 0:
+                                        out_image_name_no_ext, out_image_ext = os.path.splitext(out_image_name)
+                                        out_image_name = f'{out_image_name_no_ext}_{__patch_id}.{out_image_ext}'
+                                    out_image_dir = 'camera'
+
+                                out_image_path = os.path.join(out_image_dir, out_image_name)
+                                dst_image_path = os.path.join(patch_out_dir, dst_image_name)
+
+                                dst_image_path = os.path.abspath(dst_image_path)
+                                out_image_path = os.path.abspath(out_image_path)
+
+                                if image_paths and __patch_id == 0:
+                                    if os.path.isfile(dst_image_path):
+                                        print('dst_image_path already exists so skipping it: {}'.format(dst_image_path))
+                                    else:
+                                        print('dst_image_path: {}'.format(dst_image_path))
+                                        shutil.move(image_path, dst_image_path)
+
+                                # cv2.imshow(out_image_path, patch)
+                                # k = cv2.waitKey(0)
+                                # cv2.destroyWindow(out_image_path)
+                                # if k == 27:
+                                #     sys.exit(0)
+
+                                cv2.imwrite(out_image_path, patch)
+                            else:
+                                if image_paths:
+                                    image_path = image_paths[i]
+                                    print('skipping {} as having too low ar: {:.2f}'.format(image_path, img_ar))
+                                else:
+                                    print('skipping image {} as having too low ar: {:.2f}'.format(frame_id, img_ar))
+
 
                     vis_util.visualize_boxes_and_labels_on_image_array(
                         image_np,
@@ -1083,10 +1354,10 @@ with detection_graph.as_default():
 
                             ymin, xmin, ymax, xmax = _box
 
-                            xmin = xmin * width
-                            xmax = xmax * width
-                            ymin = ymin * height
-                            ymax = ymax * height
+                            xmin = xmin * img_width
+                            xmax = xmax * img_width
+                            ymin = ymin * img_height
+                            ymax = ymax * img_height
 
                             label = category_index[_class]['name']
 
@@ -1126,13 +1397,15 @@ with detection_graph.as_default():
                         if k == ord('q') or k == 27:
                             exit_seq = 1
                             break
+                        # elif k == 32:
+                        #     enable_recording = 1 - enable_recording
+                        #     if save_video:
+                        #         if enable_recording:
+                        #             print('Video recording enabled')
+                        #         else:
+                        #             print('Video recording disabled')
                         elif k == 32:
-                            enable_recording = 1 - enable_recording
-                            if save_video:
-                                if enable_recording:
-                                    print('Video recording enabled')
-                                else:
-                                    print('Video recording disabled')
+                            _pause = 1 - _pause
                         elif k == ord('1'):
                             registerTruePositive()
                         elif k == ord('2'):
@@ -1160,7 +1433,7 @@ with detection_graph.as_default():
                 stop_ffmpeg_stream = 1
             elif use_ptgrey:
                 stop_pt_grey_cam = 1
-            else:
+            elif cap is not None:
                 cap.release()
             if save_video:
                 video_out.release()

@@ -1,6 +1,13 @@
+import tensorflow.python.util.deprecation as deprecation
+
+deprecation._PRINT_DEPRECATION_WARNINGS = False
+
+import os
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
 import numpy as np
 import argparse
-import os
 import socket, paramiko
 import time
 import cv2
@@ -23,7 +30,7 @@ from Utilities import processArguments, addParamsToParser, processArgsFromParser
     str2list, list2str, drawRegion
 from utils.netio import send_msg_to_connection, recv_from_connection
 
-from libs.frames_readers import get_frames_reader
+from libs.frames_readers import get_frames_reader, DirectoryReader, VideoReader
 from libs.netio import bindToPort
 
 sys.path.append('../..')
@@ -576,9 +583,14 @@ class Server:
         save_path = ''
         if self.params.save_dir:
             file_path = self.frames_reader.get_file_path()
-            save_path = os.path.join('log', self.params.save_dir, os.path.basename(os.path.dirname(file_path)))
-            if not os.path.isdir(save_path):
-                os.makedirs(save_path)
+
+            if isinstance(self.frames_reader, VideoReader):
+                seq_name = os.path.splitext(os.path.basename(file_path))[0]
+            elif isinstance(self.frames_reader, DirectoryReader):
+                seq_name = os.path.basename(os.path.dirname(file_path))
+
+            save_path = os.path.join(self.params.save_dir, seq_name)
+            os.makedirs(save_path, exist_ok=1)
             save_csv_path = os.path.join(save_path, 'annotations.csv')
             print('Saving results csv to {}'.format(save_csv_path))
 
@@ -635,7 +647,6 @@ class Server:
                     mask_filename_bin = os.path.splitext(filename)[0] + '.npy'
                     save_mask_path_bin = os.path.join(save_path, mask_filename_bin)
                     np.save(save_mask_path_bin, tracker.curr_mask_cropped)
-
 
                 if self.params.save_csv:
                     orig_height, orig_width = curr_frame.shape[:2]

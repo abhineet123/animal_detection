@@ -1,0 +1,8 @@
+data/
+pretrained/
+*.ipynb_checkpoints
+*.pyc
+*.swp
+notebooks/*
+.idea
+.mat

@@ -1,0 +1,8 @@
+{
+	"n_subseq": 3,
+	"dist_threshold": 20,
+	"stop_on_failure": 0,
+	"dataset": "validation",
+	"video": "tc_Airport_ce",
+	"start_frame": 0
+}

@@ -7,7 +7,7 @@ import cv2
 import numpy as np
 import time
 
-from Utilities import drawRegion, drawBox, col_rgb, CVConstants
+from Utilities import drawRegion, drawBox, col_bgr, CVConstants
 
 try:
     import pyMTF
@@ -139,9 +139,9 @@ class PatchTracker:
 
         self.tracker_type = None
 
-        self.box_color = col_rgb[self._params.box_color]
-        self.gt_color = col_rgb[self._params.gt_color]
-        self.text_color = col_rgb[self._params.text_fmt[0]]
+        self.box_color = col_bgr[self._params.box_color]
+        self.gt_color = col_bgr[self._params.gt_color]
+        self.text_color = col_bgr[self._params.text_fmt[0]]
         self.text_font = CVConstants.fonts[self._params.text_fmt[2]]
         self.text_font_size = self._params.text_fmt[3]
         self.text_thickness = self._params.text_fmt[4]
@@ -415,7 +415,13 @@ class PatchTracker:
             mask = self.siam_mask_tracker.mask
             # self.curr_mask_pts = self.siam_mask_tracker.mask_pts
 
-            cv2.imshow('mask', mask)
+            if self._params.resize_factor != 1:
+                mask_disp = cv2.resize(mask, (0, 0), fx=self._params.resize_factor,
+                                  fy=self._params.resize_factor)
+            else:
+                mask_disp = mask
+
+            cv2.imshow('mask', mask_disp)
 
             if gt_bbox is not None:
                 mask_cropped = mask[gt_ymin:gt_ymax, gt_xmin:gt_xmax, ...]
@@ -477,7 +483,6 @@ class PatchTracker:
         }
         # drawBox(frame, corners, **kw_args)
         drawRegion(frame, corners, **kw_args)
-
 
         if self._params.show_text:
             # write statistics (error and fps) to the image

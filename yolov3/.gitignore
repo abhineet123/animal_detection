@@ -1,6 +1,9 @@
 pretrained_weights/
+results/
 yolov3_weights/
 pprint_log/
+log/
+map_pprint_log/
 
 # Repo-specific GitIgnore ----------------------------------------------------------------------------------------------
 *.jpg

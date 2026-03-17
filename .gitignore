@@ -1,4 +1,7 @@
 *.zip
+!main_repo.zip
+!misc.zip
+!tf_api/labels.zip
 *.gz
 *.rar
 *.mp4
@@ -30,6 +33,7 @@
 autonomous-driving-software-platform-develop/
 archives/
 videos/
+images/
 test_images/
 acamp_results/
 results/

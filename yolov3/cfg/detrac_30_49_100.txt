@@ -1,0 +1,6 @@
+classes=1
+train=/data/DETRAC/detrac_30_49_100.txt
+valid=/data/DETRAC/detrac_10_14_100.txt
+names=../labelling_tool/data/predefined_classes_vehicle.txt
+backup=backup/
+eval=coco
