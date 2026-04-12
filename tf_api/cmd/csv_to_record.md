@@ -1157,7 +1157,7 @@ python csv_to_record.py cfg=imgn:vid_val:even-0:random-1:samples-24:len-2 output
 
 <a id="det___imgn_sampling_base_d_"></a>
 ### det       @ imgn/sampling_based-->csv_to_record
-python csv_to_record.py cfg=imgn:det output_name=imagenet_vid_det_only.record
+python csv_to_record.py cfg=imgn:det output_name=imageblue yetinet_vid_det_only.record
 <a id="ratio_10___det_imgn_sampling_base_d_"></a>
 #### ratio_10       @ det/imgn/sampling_based-->csv_to_record
 python csv_to_record.py cfg=imgn:det:even-0:random-1:ratio-10 output_name=imagenet_det_ratio_10_random.record
