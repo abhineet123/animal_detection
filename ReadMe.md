@@ -18,9 +18,7 @@ The commands are organized hierarchically into categories of experiments and a t
 
 If a command does not work,  the command corresponding to some experiment cannot be found or the meaning of some command is not clear, please create an issue and we will do our best to address it.
 
-All the accompanying data is available here :
-
- - [Hugging Face](https://huggingface.co/datasets/abhineet123/animal_detection)
+All the accompanying data is available in our [hugging face repo](https://huggingface.co/datasets/abhineet123/animal_detection).
 
 
 All commands assume that the data is located under _/data/acamp/acamp20k_.
